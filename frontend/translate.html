@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translate - En - Vi Translator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="index.html"
+                    style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-language"></i> En - Vi Translator
+                </a>
+            </div>
+
+            <div class="search-container" style="margin-bottom: 1rem;">
+                <input type="text" id="historySearch" placeholder="Search history..."
+                    style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-color);">
+            </div>
+
+            <div class="history-list" id="historyList">
+                <!-- History items will be populated here -->
+
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="clearHistoryBtn" class="btn-secondary" style="width: 100%; font-size: 0.9rem;">
+                    <i class="fa-solid fa-trash"></i> Clear History
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h2>Translate</h2>
+                <div class="actions">
+                    <button id="themeToggle" class="theme-toggle" title="Toggle Theme"
+                        onclick="forceToggleTheme(event)">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+
+                    <button id="logoutBtn" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;"
+                        title="Logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </header>
+
+            <div class="translation-box">
+                <div class="input-group">
+                    <select class="lang-selector" id="sourceLang">
+                        <option value="en">English</option>
+                        <option value="vi">Vietnamese</option>
+                    </select>
+                    <textarea id="inputText" placeholder="Enter text to translate..."></textarea>
+                    <div class="controls">
+                        <div class="meta-info">
+                            <span id="charCount">0 chars</span>
+                        </div>
+                        <button class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.8rem;"
+                            title="Copy Source"
+                            onclick="navigator.clipboard.writeText(document.getElementById('inputText').value)">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button class="swap-btn" id="swapLangBtn" style="visibility: hidden;">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                </button>
+
+                <div class="output-group">
+                    <select class="lang-selector" id="targetLang">
+                        <option value="vi">Vietnamese</option>
+                        <option value="en">English</option>
+                    </select>
+                    <textarea id="outputText" readonly placeholder="Translation will appear here..."></textarea>
+                    <div class="controls">
+                        <div class="meta-info" style="gap: 1.5rem;">
+                            <button class="btn-secondary" style="border:none; padding: 0; font-size: 1.2rem;"
+                                onclick="navigator.clipboard.writeText(document.getElementById('outputText').value)">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                            <button id="likeBtn" class="btn-secondary"
+                                style="border:none; padding: 0; font-size: 1.2rem;">
+                                <i class="fa-regular fa-thumbs-up"></i>
+                            </button>
+                            <button id="dislikeBtn" class="btn-secondary"
+                                style="border:none; padding: 0; font-size: 1.2rem;">
+                                <i class="fa-regular fa-thumbs-down"></i>
+                            </button>
+                            <button id="suggestBtn" class="btn-secondary"
+                                style="border:none; padding: 0; font-size: 1.2rem;" title="Suggest Edit">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                        </div>
+                        <button id="translateBtn" class="btn-primary">
+                            Translate
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="nav-buttons-container"
+                style="display: flex; gap: 2rem; justify-content: center; margin-top: 2rem;">
+                <a href="full_history.html" class="btn-secondary btn-lg"
+                    style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> View Full History
+                </a>
+                <a href="saved.html" class="btn-secondary btn-lg"
+                    style="display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-bookmark"></i> Saved Translations
+                </a>
+            </div>
+
+            <!-- Analysis Panel -->
+            <div class="analysis-panel" style="display: none;">
+                <div class="analysis-card">
+                    <h4>Topic Detection</h4>
+                    <div class="analysis-value" id="topicValue">General</div>
+                </div>
+                <div class="analysis-card">
+                    <h4>Similarity Score</h4>
+                    <div class="analysis-value" id="similarityValue">--</div>
+                </div>
+                <div class="analysis-card">
+                    <h4>Spelling Status</h4>
+                    <div class="analysis-value" id="spellingValue">OK</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,56 @@
+/* History Card Styles (Shared by Full History and Saved) */
+.history-card {
+    background: var(--card-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.history-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.history-card .meta-icons {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    color: var(--text-muted);
+}
+
+.meta-icon.active {
+    color: var(--primary-color);
+}
+
+.meta-icon.liked {
+    color: #10b981;
+}
+
+.meta-icon.disliked {
+    color: #ef4444;
+}
+
+.meta-icon.saved {
+    color: #f59e0b;
+}
+
+.history-content-row {
+    margin-bottom: 0.5rem;
+}
+
+.lang-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.text-content {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>En - Vi Translator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+
+    <main class="landing-container">
+        <nav class="navbar glass">
+            <div class="logo">En - Vi Translator</div>
+
+            <!-- Right Controls -->
+            <div class="nav-controls">
+                <button id="themeToggle" class="theme-toggle" title="Toggle Theme" onclick="forceToggleTheme(event)">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+
+                <button id="logoutBtn" class="btn-secondary"
+                    style="display: none; padding: 0.5rem 1rem; font-size: 0.9rem;" title="Logout">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </nav>
+
+        <section class="hero">
+            <div class="hero-content glass-card">
+                <h1>Break Language Barriers <br> <span class="gradient-text">Instantly</span></h1>
+                <p>Experience seamless English to Vietnamese translation powered by advanced AI. Accurate, fast, and
+                    context-aware.</p>
+                <div class="cta-group">
+                    <a href="login.html" class="btn-primary btn-lg">Get Started</a>
+
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="feature-card glass">
+                <h3>Smart Translation</h3>
+                <p>Context-aware translations that understand nuances.</p>
+            </div>
+
+            <div class="feature-card glass">
+                <h3>History & Sync</h3>
+                <p>Save your translations and access them anytime.</p>
+            </div>
+        </section>
+    </main>
+    <script src="js/script.js"></script>
+</body>
+
+</html>

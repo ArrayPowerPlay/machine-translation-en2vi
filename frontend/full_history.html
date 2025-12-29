@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full History - LinguaFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/history_card.css">
+</head>
+
+<body>
+
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="index.html"
+                    style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-language"></i> LinguaFlow
+                </a>
+            </div>
+
+            <div class="sidebar-footer" style="margin-top: auto;">
+                <a href="translate.html" class="btn-secondary"
+                    style="width: 100%; font-size: 0.9rem; text-align: center; display: block; text-decoration: none;">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Translate
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h2>Full Translation History</h2>
+                <div class="actions">
+                    <button id="themeToggle" class="theme-toggle" title="Toggle Theme"
+                        onclick="forceToggleTheme(event)">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                    <button id="logoutBtn" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;"
+                        title="Logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </header>
+
+
+
+            <div id="fullHistoryList" style="max-width: 800px; margin: 0 auto; width: 100%;">
+                <!-- Populated by JS -->
+                <div style="text-align: center; color: var(--text-muted);">Loading...</div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>
