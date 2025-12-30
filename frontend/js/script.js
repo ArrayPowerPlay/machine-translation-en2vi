@@ -1,5 +1,5 @@
 // --- CONFIGURATION ---
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 // --- THEME LOGIC (Keep existing logic) ---
 window.forceToggleTheme = (e) => {
@@ -38,6 +38,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const translateBtn = document.getElementById('translateBtn');
     const historyList = document.getElementById('historyList');
     const logoutBtn = document.getElementById('logoutBtn');
+    const historySearch = document.getElementById('historySearch');
+    const saveBtn = document.getElementById('saveBtn');
+    const likeBtn = document.getElementById('likeBtn');
+    const dislikeBtn = document.getElementById('dislikeBtn');
+    const suggestBtn = document.getElementById('suggestBtn');
+
+    // --- NEW CONTROLS ---
+    const savedSearch = document.getElementById('savedSearch');
+    const clearSavedBtn = document.getElementById('clearSavedBtn');
+    const fullHistorySearch = document.getElementById('fullHistorySearch');
+    const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 
     // --- STATE ---
     let token = localStorage.getItem('accessToken');
@@ -57,10 +68,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function formatError(detail) {
+        if (Array.isArray(detail)) return detail.map(e => e.msg).join('\n');
+        if (typeof detail === 'object') return JSON.stringify(detail);
+        return detail;
+    }
+
+    // --- LOGOUT LOGIC ---
+    window.logout = () => {
+        localStorage.removeItem('accessToken');
+        window.location.href = 'index.html'; // Redirect to login
+    };
+
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('accessToken');
-            window.location.href = 'index.html';
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.logout();
         });
     }
 
@@ -84,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 const err = await response.json();
-                alert(err.detail);
+                alert(formatError(err.detail));
                 return;
             }
 
@@ -110,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 const err = await response.json();
-                alert(err.detail);
+                alert(formatError(err.detail));
                 return;
             }
 
@@ -141,6 +164,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             translateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Translating...';
             translateBtn.disabled = true;
+            if (saveBtn) saveBtn.querySelector('i').className = 'fa-regular fa-bookmark'; // Reset save icon
+            if (likeBtn) likeBtn.querySelector('i').className = 'fa-regular fa-thumbs-up';
+            if (dislikeBtn) dislikeBtn.querySelector('i').className = 'fa-regular fa-thumbs-down';
+            if (suggestBtn) suggestBtn.querySelector('i').className = 'fa-solid fa-pen-to-square';
 
             try {
                 const headers = { 'Content-Type': 'application/json' };
@@ -169,6 +196,108 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- FEATURE LOGIC ---
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            if (!token) return alert("Please login to save.");
+            const oText = inputText.value;
+            const tText = outputText.value;
+            if (!oText || !tText) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/saved-translations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                        original_text: oText,
+                        translated_text: tText,
+                        source_lang: document.getElementById('sourceLang').value,
+                        target_lang: document.getElementById('targetLang').value
+                    })
+                });
+                if (response.ok) {
+                    saveBtn.querySelector('i').className = 'fa-solid fa-bookmark';
+                    alert("Saved successfully!");
+                }
+            } catch (e) { alert("Error saving: " + e.message); }
+        });
+    }
+
+    async function handleRating(score, btn) {
+        if (!token) return alert("Please login to rate.");
+        const oText = inputText.value;
+        const tText = outputText.value;
+        if (!oText || !tText) return;
+
+        try {
+            await fetch(`${API_BASE_URL}/rate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ original_text: oText, translated_text: tText, rating: score })
+            });
+
+            // Visual Feedback
+            // Reset both first
+            likeBtn.querySelector('i').className = 'fa-regular fa-thumbs-up';
+            dislikeBtn.querySelector('i').className = 'fa-regular fa-thumbs-down';
+
+            // Set active
+            if (score === 5) {
+                btn.querySelector('i').className = 'fa-solid fa-thumbs-up';
+            } else {
+                btn.querySelector('i').className = 'fa-solid fa-thumbs-down';
+            }
+
+            alert("Thanks for your feedback!");
+        } catch (e) { alert("Error sending feedback"); }
+    }
+
+    if (likeBtn) likeBtn.addEventListener('click', () => handleRating(5, likeBtn));
+    if (dislikeBtn) dislikeBtn.addEventListener('click', () => handleRating(1, dislikeBtn));
+
+    if (suggestBtn) {
+        suggestBtn.addEventListener('click', async () => {
+            if (!token) return alert("Please login to suggest.");
+            const oText = inputText.value;
+            if (!oText) return;
+
+            const suggestion = prompt("Enter a better translation:");
+            if (!suggestion) return;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/contribute`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                        original_text: oText,
+                        suggested_translation: suggestion,
+                        source_lang: document.getElementById('sourceLang').value,
+                        target_lang: document.getElementById('targetLang').value
+                    })
+                });
+                if (response.ok) {
+                    // Visual Feedback: persistent checkmark until next translation
+                    const icon = suggestBtn.querySelector('i');
+                    icon.className = 'fa-solid fa-check';
+                    // removed timeout/revert
+                    alert("Suggestion sent. Thank you!");
+                }
+            } catch (e) { alert("Error sending suggestion"); }
+        });
+    }
+
+    // --- SEARCH LOGIC ---
+    if (historySearch) {
+        historySearch.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const items = document.querySelectorAll('.history-item');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(term) ? 'flex' : 'none';
+            });
+        });
+    }
+
     // --- HISTORY LOGIC ---
     async function loadHistory() {
         if (!historyList || !token) return; // Only load if logged in and on translate page
@@ -177,6 +306,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${API_BASE_URL}/history`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+
+            if (response.status === 401) {
+                console.warn("Session expired. Logging out...");
+                window.logout();
+                return;
+            }
+
             if (response.ok) {
                 const history = await response.json();
                 renderHistoryList(history);
@@ -196,15 +332,19 @@ document.addEventListener('DOMContentLoaded', () => {
         history.forEach(item => {
             const el = document.createElement('div');
             el.className = 'history-item';
+            // Pass metadata to fillTranslation
+            el.onclick = () => fillTranslation(
+                item.original_text,
+                item.translated_text,
+                item.is_saved,
+                item.rating,
+                !!item.suggestion
+            );
+            el.style.cursor = 'pointer';
             el.innerHTML = `
-                <div class="history-content" onclick="fillTranslation('${escapeHtml(item.original_text)}', '${escapeHtml(item.translated_text)}')">
-                    <div class="history-source">${escapeHtml(item.original_text)}</div>
-                    <div class="history-target">${escapeHtml(item.translated_text)}</div>
-                </div>
-                <div class="history-actions">
-                    <button class="action-btn delete-btn" onclick="deleteHistoryItem(${item.id})">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+                <div class="history-content">
+                    <div class="history-source" style="font-weight: 600; color: var(--text-color);">${escapeHtml(item.original_text)}</div>
+                    <div class="history-target" style="color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(item.translated_text)}</div>
                 </div>
             `;
             historyList.appendChild(el);
@@ -224,9 +364,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.fillTranslation = (src, tgt) => {
+    window.fillTranslation = (src, tgt, isSaved, rating, hasSuggestion) => {
         if (inputText) inputText.value = src;
         if (outputText) outputText.value = tgt;
+
+        // Sync Icons
+        if (saveBtn) saveBtn.querySelector('i').className = isSaved ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark';
+
+        if (likeBtn) likeBtn.querySelector('i').className = (rating === 5) ? 'fa-solid fa-thumbs-up' : 'fa-regular fa-thumbs-up';
+        if (dislikeBtn) dislikeBtn.querySelector('i').className = (rating === 1) ? 'fa-solid fa-thumbs-down' : 'fa-regular fa-thumbs-down';
+
+        if (suggestBtn) suggestBtn.querySelector('i').className = hasSuggestion ? 'fa-solid fa-check' : 'fa-solid fa-pen-to-square';
     }
 
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
@@ -267,14 +415,76 @@ document.addEventListener('DOMContentLoaded', () => {
     const fullHistoryList = document.getElementById('fullHistoryList');
     const savedList = document.getElementById('savedList');
 
+    // 1. Saved Translations Logic
+    if (savedList) {
+        loadSavedTranslations();
+
+        // Search
+        if (savedSearch) {
+            savedSearch.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const items = savedList.querySelectorAll('.history-item');
+                items.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(term) ? 'block' : 'none';
+                });
+            });
+        }
+
+        // Delete All
+        if (clearSavedBtn) {
+            clearSavedBtn.addEventListener('click', async () => {
+                if (!confirm("Are you sure you want to delete ALL saved translations?")) return;
+                try {
+                    const res = await fetch(`${API_BASE_URL}/saved-translations`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        loadSavedTranslations();
+                        alert("All saved translations deleted.");
+                    } else {
+                        alert("Failed to delete all.");
+                    }
+                } catch (e) { alert("Error: " + e.message); }
+            });
+        }
+    }
+
+    // 2. Full History Logic
     if (fullHistoryList) {
         loadFullHistory();
 
+        // Search
+        if (fullHistorySearch) {
+            fullHistorySearch.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const items = fullHistoryList.querySelectorAll('.history-item');
+                items.forEach(item => {
+                    const text = item.textContent.toLowerCase();
+                    item.style.display = text.includes(term) ? 'block' : 'none';
+                });
+            });
+        }
 
-    }
-
-    if (savedList) {
-        loadSavedTranslations();
+        // Delete All
+        if (clearAllHistoryBtn) {
+            clearAllHistoryBtn.addEventListener('click', async () => {
+                if (!confirm("Are you sure you want to delete ALL history?")) return;
+                try {
+                    const res = await fetch(`${API_BASE_URL}/history`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        loadFullHistory();
+                        alert("History cleared.");
+                    } else {
+                        alert("Failed to clear history.");
+                    }
+                } catch (e) { alert("Error: " + e.message); }
+            });
+        }
     }
 
     async function loadFullHistory() {
@@ -323,18 +533,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Icons logic (mocking liked/disliked/edited as they are not returned by backend yet)
             // ideally backend returns item.is_liked, item.is_edited etc.
             // For now only Saved is real.
-            let iconsHtml = '';
-            if (isSaved) iconsHtml += '<i class="fa-solid fa-bookmark meta-icon saved" title="Saved"></i>';
-            /* 
-            if (item.liked) iconsHtml += '<i class="fa-solid fa-thumbs-up meta-icon liked"></i>';
-            if (item.disliked) iconsHtml += '<i class="fa-solid fa-thumbs-down meta-icon disliked"></i>';
-            if (item.edited) iconsHtml += '<i class="fa-solid fa-pen meta-icon" title="Edited"></i>';
-            */
+            // Collect Metadata Icons
+            let metaIcons = '';
+            if (item.rating === 5) metaIcons += '<i class="fa-solid fa-thumbs-up" title="Liked"></i>';
+            if (item.rating === 1) metaIcons += '<i class="fa-solid fa-thumbs-down" title="Disliked"></i>';
+            if (item.suggestion) metaIcons += '<i class="fa-solid fa-pen-to-square" title="Edited"></i>';
+            if (isSaved) metaIcons += '<i class="fa-solid fa-bookmark" title="Saved"></i>'; // Include Saved here too? Or keep at top? User asked for "like, dislike, edited". I'll put them all here for unified status.
 
             el.innerHTML = `
-                <div class="meta-icons">
-                    ${iconsHtml}
-                </div>
+                <!-- Removed top meta-icons div as they are moved to bottom -->
                 <div class="history-content-row">
                     <div class="lang-label">From: ${item.source_lang || '?'}</div>
                     <div class="text-content">${escapeHtml(item.original_text)}</div>
@@ -343,13 +550,62 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="lang-label">To: ${item.target_lang || '?'}</div>
                     <div class="text-content" style="color: var(--primary-color)">${escapeHtml(item.translated_text)}</div>
                 </div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right;">
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right; margin-bottom: 0.5rem;">
                     ${new Date(item.created_at).toLocaleString()}
+                </div>
+                
+                <!-- Bottom Action Row -->
+                <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+                    <!-- Status Icons (Neutral) -->
+                    <div style="flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 1rem; font-size: 1.2rem; color: var(--text-color);">
+                        ${metaIcons}
+                    </div>
+
+                    <!-- Remove Button (Neutral) -->
+                    <button style="width: auto; min-width: 140px; padding: 0.75rem 1.5rem; background-color: transparent; color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background 0.2s;" 
+                        onclick="deleteHistoryItem(${item.id})"
+                        onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
+                        onmouseout="this.style.background='transparent'">
+                        <i class="fa-solid fa-trash"></i> Remove
+                    </button>
                 </div>
             `;
             fullHistoryList.appendChild(el);
         });
     }
+
+    // Export delete function for Full History items
+    window.deleteHistoryItem = async (id) => {
+        if (!confirm("Delete this history record?")) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/history/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                loadFullHistory(); // Refresh list
+            } else {
+                alert("Failed to delete item.");
+            }
+        } catch (e) { alert("Error: " + e.message); }
+    };
+
+    // Export delete function for Saved items (existing logic needs to be globally accessible if inline onclick used)
+    window.deleteSavedItem = async (id) => {
+        if (!confirm("Remove from saved?")) return;
+        try {
+            // Saved items are deleted by ID
+            const res = await fetch(`${API_BASE_URL}/saved-translations/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                loadSavedTranslations();
+            } else {
+                alert("Failed to remove saved item.");
+            }
+        } catch (e) { alert("Error: " + e.message); }
+    };
 
     async function loadSavedTranslations() {
         if (!token) return;
@@ -375,6 +631,13 @@ document.addEventListener('DOMContentLoaded', () => {
         items.forEach(item => {
             const el = document.createElement('div');
             el.className = 'history-card'; // Reuse style
+
+            // Metadata Icons (Neutral)
+            let metaIcons = '<i class="fa-solid fa-bookmark" title="Saved"></i>';
+            if (item.rating === 5) metaIcons += '<i class="fa-solid fa-thumbs-up" title="Liked"></i>';
+            if (item.rating === 1) metaIcons += '<i class="fa-solid fa-thumbs-down" title="Disliked"></i>';
+            if (item.suggestion) metaIcons += '<i class="fa-solid fa-pen-to-square" title="Edited"></i>';
+
             el.innerHTML = `
                 <div class="history-content-row">
                     <div class="lang-label">From: ${item.source_lang || '?'}</div>
@@ -384,9 +647,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="lang-label">To: ${item.target_lang || '?'}</div>
                     <div class="text-content" style="color: var(--primary-color)">${escapeHtml(item.translated_text)}</div>
                 </div>
-                <button class="btn-secondary" style="font-size: 0.8rem; padding: 0.5rem;" onclick="deleteSavedItem(${item.id})">
-                    <i class="fa-solid fa-trash"></i> Remove
-                </button>
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right; margin-bottom: 0.5rem;">
+                    ${new Date(item.created_at).toLocaleString()}
+                </div>
+                
+                <!-- Bottom Action Row -->
+                <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+                    <!-- Status Icons (Neutral) -->
+                    <div style="flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 1rem; font-size: 1.2rem; color: var(--text-color);">
+                        ${metaIcons}
+                    </div>
+
+                    <!-- Remove Button (Neutral) -->
+                    <button style="width: auto; min-width: 140px; padding: 0.75rem 1.5rem; background-color: transparent; color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background 0.2s;" 
+                        onclick="deleteSavedItem(${item.id})"
+                        onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
+                        onmouseout="this.style.background='transparent'">
+                        <i class="fa-solid fa-trash"></i> Remove
+                    </button>
+                </div>
              `;
             savedList.appendChild(el);
         });

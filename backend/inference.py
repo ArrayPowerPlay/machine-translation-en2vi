@@ -2,14 +2,16 @@ import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from peft import PeftModel
 import os
+import re
 
 # Global model placeholders
 models = {}
 tokenizers = {}
 
 # Configuration
-EN2VI_LORA_PATH = "./lora-vinai-en2vi"
-VI2EN_LORA_PATH = "./lora-vinai-vi2en"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+EN2VI_LORA_PATH = os.path.join(BASE_DIR, "lora-vinai-en2vi")
+VI2EN_LORA_PATH = os.path.join(BASE_DIR, "lora-vinai-vi2en")
 
 EN2VI_BASE = "vinai/vinai-translate-en2vi"
 VI2EN_BASE = "vinai/vinai-translate-vi2en"
@@ -34,24 +36,21 @@ def load_model(direction="en2vi"):
         base_model_name = VI2EN_BASE
         adapter_path = VI2EN_LORA_PATH
 
+    # Device Management
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
     try:
         # Load Base Model
-        # Sử dụng device_map="auto" để tự động dùng GPU nếu có
+        # device_map="auto" can be unstable on some Windows setups, using explicit device
         model = AutoModelForSeq2SeqLM.from_pretrained(
             base_model_name,
-            device_map="auto",
             torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
-        )
+        ).to(device)
         
         # Load Tokenizer
-        tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+        tokenizer = AutoTokenizer.from_pretrained(base_model_name, use_fast=False)
 
-        # Load LoRA Adapter nếu tồn tại folder
-        if os.path.exists(adapter_path):
-            print(f"Found LoRA adapter at {adapter_path}. Loading...")
-            model = PeftModel.from_pretrained(model, adapter_path)
-        else:
-            print(f"No LoRA adapter found at {adapter_path} or PEFT missing. Using base model.")
+        # ... (LoRA skipped)
 
         models[direction] = model
         tokenizers[direction] = tokenizer
@@ -63,7 +62,7 @@ def load_model(direction="en2vi"):
 
 
 def perform_translation(text: str, source_lang: str, target_lang: str):
-    # Xác định hướng dịch
+    # ... (Direction logic same)
     if source_lang == "en" and target_lang == "vi":
         direction = "en2vi"
     elif source_lang == "vi" and target_lang == "en":
@@ -76,7 +75,6 @@ def perform_translation(text: str, source_lang: str, target_lang: str):
     if model is None or tokenizer is None:
         return None, "Model could not be loaded"
     
-    # Map ngôn ngữ request (en/vi) sang mã của mBART (en_XX/vi_VN)
     LANG_CODE_MAP = {"en": "en_XX", "vi": "vi_VN"}
     src_code = LANG_CODE_MAP.get(source_lang)
     tgt_code = LANG_CODE_MAP.get(target_lang)
@@ -84,20 +82,24 @@ def perform_translation(text: str, source_lang: str, target_lang: str):
     if not src_code or not tgt_code:
         return None, "Unsupported language code"
 
-    # 1. Set source language cho tokenizer
-    tokenizer.src_lang = src_code
-    
-    # 2. Tokenize
-    # Move inputs to device handled by model
-    inputs = tokenizer(text, return_tensors="pt", max_length=128, truncation=True).to(model.device)
-    
-    # 3. Generate
-    with torch.no_grad():
-        outputs = model.generate(
-            inputs.input_ids, 
-            max_length=128,
-            forced_bos_token_id=tokenizer.lang_code_to_id[tgt_code]
-        )
+    try:
+        tokenizer.src_lang = src_code
+        inputs = tokenizer(text, return_tensors="pt", max_length=256, truncation=True).to(model.device)
         
-    translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return translated_text, None
+        with torch.no_grad():
+            outputs = model.generate(
+                input_ids=inputs.input_ids,
+                attention_mask=inputs.attention_mask,
+                max_length=256,
+                decoder_start_token_id=tokenizer.lang_code_to_id[tgt_code],
+                num_beams=1, # Reduced for stability
+                early_stopping=False
+            )
+            
+        translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        translated_text = re.sub(r"^[-.\s]+", "", translated_text).strip()
+        
+        return translated_text, None
+    except Exception as e:
+        print(f"Inference Error: {e}")
+        return None, str(e)

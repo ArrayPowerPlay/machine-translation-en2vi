@@ -24,8 +24,8 @@ def load_and_preprocess_data(
     else:
         print(f"Using dataset {dataset_name} config {dataset_config}...")
         dataset = load_dataset(dataset_name, dataset_config, split="train") 
-        if len(dataset) > 500000:
-            dataset = dataset.select(range(500000))   
+        if len(dataset) > 400000:
+            dataset = dataset.select(range(400000))   
             
     print(f"Dataset size: {len(dataset)}")
 

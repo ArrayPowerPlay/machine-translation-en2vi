@@ -10,7 +10,8 @@ services:
       POSTGRES_PASSWORD: 123456
       POSTGRES_DB: translation_db
     ports:
-      - "5432:5432"
+      # host port: container port
+      - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

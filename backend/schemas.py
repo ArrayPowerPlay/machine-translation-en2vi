@@ -1,4 +1,7 @@
+from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, Field
+
 
 class UserCreate(BaseModel):
     username: str
@@ -21,8 +24,6 @@ class TranslationRequest(BaseModel):
     source_lang: str = "en" # 'en' or 'vi'
     target_lang: str = "vi" # 'vi' or 'en'
     
-# --- NEW FEATURES SCHEMAS ---
-
 
 class HistoryResponse(BaseModel):
     id: int
@@ -30,10 +31,13 @@ class HistoryResponse(BaseModel):
     translated_text: str
     source_lang: str
     target_lang: str
-    created_at: str
+    created_at: datetime
+    is_saved: bool = False
+    rating: Optional[int] = None
+    suggestion: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class SavedTranslationCreate(BaseModel):
@@ -41,14 +45,15 @@ class SavedTranslationCreate(BaseModel):
     translated_text: str
     source_lang: str
     target_lang: str
-    note: str = None
+    note: Optional[str] = None
 
 
 class SavedTranslationResponse(SavedTranslationCreate):
     id: int
-    created_at: str
+    created_at: datetime
+    
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ContributionCreate(BaseModel):

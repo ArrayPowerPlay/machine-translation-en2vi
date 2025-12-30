@@ -50,7 +50,25 @@
                 </div>
             </header>
 
+            <!-- Controls: Aligned with History Cards (max-width: 800px) -->
+            <div class="controls"
+                style="max-width: 800px; width: 100%; margin: 1rem auto 2rem auto; display: flex; align-items: center; justify-content: space-between;">
 
+                <!-- Search Input (Left) -->
+                <div style="position: relative; width: 350px;">
+                    <i class="fa-solid fa-search"
+                        style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                    <input type="text" id="fullHistorySearch" class="search-input" placeholder="Search history..."
+                        style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.5rem; background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 12px; color: var(--text-color); outline: none;">
+                </div>
+
+                <!-- Delete Button (Right) -->
+                <button id="clearAllHistoryBtn" class="btn-danger"
+                    style="white-space: nowrap; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid var(--error-color, #ef4444); color: var(--error-color, #ef4444); background: rgba(239, 68, 68, 0.1);">
+                    Delete History
+                </button>
+
+            </div>
 
             <div id="fullHistoryList" style="max-width: 800px; margin: 0 auto; width: 100%;">
                 <!-- Populated by JS -->

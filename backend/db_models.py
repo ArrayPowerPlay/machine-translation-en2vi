@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from database import Base
+from .database import Base
 
 
 class User(Base):
@@ -46,7 +46,7 @@ class TranslationContribution(Base):
     suggested_translation = Column(Text, nullable=False)
     source_lang = Column(String(10))
     target_lang = Column(String(10))
-    created_at = Column(DateTime, default=datetime.utcnow)
+
 
 
 class TranslationRating(Base):
@@ -57,4 +57,4 @@ class TranslationRating(Base):
     original_text = Column(Text, nullable=False)
     translated_text = Column(Text, nullable=False)
     rating = Column(Integer, nullable=False) # 1-5
-    created_at = Column(DateTime, default=datetime.utcnow)
+
