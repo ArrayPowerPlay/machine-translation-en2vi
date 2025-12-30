@@ -3,12 +3,14 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
 
+
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+
 
 class TranslationHistory(Base):
     __tablename__ = "translation_history"
@@ -20,6 +22,7 @@ class TranslationHistory(Base):
     source_lang = Column(String(10))
     target_lang = Column(String(10))
     created_at = Column(DateTime, default=datetime.utcnow)
+
 
 class SavedTranslation(Base):
     __tablename__ = "saved_translations"
@@ -33,6 +36,7 @@ class SavedTranslation(Base):
     note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class TranslationContribution(Base):
     __tablename__ = "contributions"
 
@@ -43,6 +47,7 @@ class TranslationContribution(Base):
     source_lang = Column(String(10))
     target_lang = Column(String(10))
     created_at = Column(DateTime, default=datetime.utcnow)
+
 
 class TranslationRating(Base):
     __tablename__ = "ratings"

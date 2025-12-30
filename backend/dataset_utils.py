@@ -16,9 +16,11 @@ def load_and_preprocess_data(
     if dataset_path and os.path.exists(dataset_path):
         print(f"Loading dataset from {dataset_path}...")
         if dataset_path.endswith('.json'):
-            dataset = load_dataset("json", data_files=dataset_path)
+            dataset_dict = load_dataset("json", data_files=dataset_path)
         else:
-            dataset = load_dataset("csv", data_files=dataset_path)
+            dataset_dict = load_dataset("csv", data_files=dataset_path)
+        # Extract the first split from DatasetDict
+        dataset = dataset_dict[list(dataset_dict.keys())[0]]
     else:
         print(f"Using dataset {dataset_name} config {dataset_config}...")
         dataset = load_dataset(dataset_name, dataset_config, split="train") 
