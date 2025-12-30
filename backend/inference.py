@@ -82,24 +82,21 @@ def perform_translation(text: str, source_lang: str, target_lang: str):
     if not src_code or not tgt_code:
         return None, "Unsupported language code"
 
-    try:
-        tokenizer.src_lang = src_code
-        inputs = tokenizer(text, return_tensors="pt", max_length=256, truncation=True).to(model.device)
+    tokenizer.src_lang = src_code
+    inputs = tokenizer(text, return_tensors="pt", max_length=256, truncation=True).to(model.device)
+    
+    with torch.no_grad():
+        outputs = model.generate(
+            input_ids=inputs.input_ids,
+            attention_mask=inputs.attention_mask,
+            max_length=256,
+            decoder_start_token_id=tokenizer.lang_code_to_id[tgt_code],
+            num_beams=1, # Reduced for stability
+            early_stopping=False
+        )
         
-        with torch.no_grad():
-            outputs = model.generate(
-                input_ids=inputs.input_ids,
-                attention_mask=inputs.attention_mask,
-                max_length=256,
-                decoder_start_token_id=tokenizer.lang_code_to_id[tgt_code],
-                num_beams=1, # Reduced for stability
-                early_stopping=False
-            )
-            
-        translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        translated_text = re.sub(r"^[-.\s]+", "", translated_text).strip()
-        
-        return translated_text, None
-    except Exception as e:
-        print(f"Inference Error: {e}")
-        return None, str(e)
+    translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    translated_text = re.sub(r"^[-.\s]+", "", translated_text).strip()
+    
+    return translated_text, None
+ 

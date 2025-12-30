@@ -204,22 +204,47 @@ document.addEventListener('DOMContentLoaded', () => {
             const tText = outputText.value;
             if (!oText || !tText) return;
 
+            const isSaved = saveBtn.querySelector('i').classList.contains('fa-solid');
+
             try {
-                const response = await fetch(`${API_BASE_URL}/saved-translations`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        original_text: oText,
-                        translated_text: tText,
-                        source_lang: document.getElementById('sourceLang').value,
-                        target_lang: document.getElementById('targetLang').value
-                    })
-                });
-                if (response.ok) {
-                    saveBtn.querySelector('i').className = 'fa-solid fa-bookmark';
-                    alert("Saved successfully!");
+                if (isSaved) {
+                    // UNSAVE Logic
+                    const response = await fetch(`${API_BASE_URL}/saved-translations/unsave`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({
+                            original_text: oText,
+                            translated_text: tText,
+                            source_lang: document.getElementById('sourceLang').value,
+                            target_lang: document.getElementById('targetLang').value
+                        })
+                    });
+                    if (response.ok) {
+                        saveBtn.querySelector('i').className = 'fa-regular fa-bookmark';
+                        // Optional: alert("Removed from saved.");
+                    } else {
+                        throw new Error("Failed to unsave");
+                    }
+                } else {
+                    // SAVE Logic
+                    const response = await fetch(`${API_BASE_URL}/saved-translations`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({
+                            original_text: oText,
+                            translated_text: tText,
+                            source_lang: document.getElementById('sourceLang').value,
+                            target_lang: document.getElementById('targetLang').value
+                        })
+                    });
+                    if (response.ok) {
+                        saveBtn.querySelector('i').className = 'fa-solid fa-bookmark';
+                        alert("Saved successfully!");
+                    } else {
+                        throw new Error("Failed to save");
+                    }
                 }
-            } catch (e) { alert("Error saving: " + e.message); }
+            } catch (e) { alert("Error: " + e.message); }
         });
     }
 
@@ -423,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedSearch) {
             savedSearch.addEventListener('input', (e) => {
                 const term = e.target.value.toLowerCase();
-                const items = savedList.querySelectorAll('.history-item');
+                const items = savedList.querySelectorAll('.history-card');
                 items.forEach(item => {
                     const text = item.textContent.toLowerCase();
                     item.style.display = text.includes(term) ? 'block' : 'none';
@@ -459,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fullHistorySearch) {
             fullHistorySearch.addEventListener('input', (e) => {
                 const term = e.target.value.toLowerCase();
-                const items = fullHistoryList.querySelectorAll('.history-item');
+                const items = fullHistoryList.querySelectorAll('.history-card');
                 items.forEach(item => {
                     const text = item.textContent.toLowerCase();
                     item.style.display = text.includes(term) ? 'block' : 'none';
@@ -518,6 +543,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- HELPER: Unified Card Renderer ---
+    function renderCardHTML(item, isSaved, deleteFunctionStr) {
+        // Collect Metadata Icons
+        let metaIcons = '';
+        if (item.rating === 5) metaIcons += '<i class="fa-solid fa-thumbs-up" title="Liked"></i>';
+        if (item.rating === 1) metaIcons += '<i class="fa-solid fa-thumbs-down" title="Disliked"></i>';
+        if (item.suggestion) metaIcons += '<i class="fa-solid fa-pen-to-square" title="Edited"></i>';
+        if (isSaved) metaIcons += '<i class="fa-solid fa-bookmark" title="Saved"></i>';
+
+        // Suggestion display
+        let suggestionHtml = '';
+        if (item.suggestion) {
+            suggestionHtml = `
+                <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(var(--primary-rgb), 0.1); border-left: 3px solid var(--primary-color); font-size: 0.9rem; color: var(--text-color);">
+                    <strong style="color: var(--primary-color);">Edit:</strong> ${escapeHtml(item.suggestion)}
+                </div>
+            `;
+        }
+
+        return `
+            <div class="history-content-row">
+                <div class="lang-label">From: ${item.source_lang || '?'}</div>
+                <div class="text-content">${escapeHtml(item.original_text)}</div>
+            </div>
+            <div class="history-content-row">
+                <div class="lang-label">To: ${item.target_lang || '?'}</div>
+                <div class="text-content" style="color: var(--primary-color)">${escapeHtml(item.translated_text)}</div>
+            </div>
+            
+            ${suggestionHtml}
+
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right; margin-bottom: 0.5rem;">
+                ${new Date(item.created_at).toLocaleString()}
+            </div>
+            
+            <!-- Bottom Action Row -->
+            <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+                <!-- Status Icons (Neutral) -->
+                <div style="flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 1rem; font-size: 1.2rem; color: var(--text-color);">
+                    ${metaIcons}
+                </div>
+
+                <!-- Remove Button (Neutral) -->
+                <button style="width: auto; min-width: 140px; padding: 0.75rem 1.5rem; background-color: transparent; color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background 0.2s;" 
+                    onclick="${deleteFunctionStr}"
+                    onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
+                    onmouseout="this.style.background='transparent'">
+                    <i class="fa-solid fa-trash"></i> Remove
+                </button>
+            </div>
+        `;
+    }
+
     function renderFullHistory(history, savedTexts) {
         fullHistoryList.innerHTML = '';
         if (history.length === 0) {
@@ -529,47 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isSaved = savedTexts.has(item.original_text);
             const el = document.createElement('div');
             el.className = 'history-card';
-
-            // Icons logic (mocking liked/disliked/edited as they are not returned by backend yet)
-            // ideally backend returns item.is_liked, item.is_edited etc.
-            // For now only Saved is real.
-            // Collect Metadata Icons
-            let metaIcons = '';
-            if (item.rating === 5) metaIcons += '<i class="fa-solid fa-thumbs-up" title="Liked"></i>';
-            if (item.rating === 1) metaIcons += '<i class="fa-solid fa-thumbs-down" title="Disliked"></i>';
-            if (item.suggestion) metaIcons += '<i class="fa-solid fa-pen-to-square" title="Edited"></i>';
-            if (isSaved) metaIcons += '<i class="fa-solid fa-bookmark" title="Saved"></i>'; // Include Saved here too? Or keep at top? User asked for "like, dislike, edited". I'll put them all here for unified status.
-
-            el.innerHTML = `
-                <!-- Removed top meta-icons div as they are moved to bottom -->
-                <div class="history-content-row">
-                    <div class="lang-label">From: ${item.source_lang || '?'}</div>
-                    <div class="text-content">${escapeHtml(item.original_text)}</div>
-                </div>
-                <div class="history-content-row">
-                    <div class="lang-label">To: ${item.target_lang || '?'}</div>
-                    <div class="text-content" style="color: var(--primary-color)">${escapeHtml(item.translated_text)}</div>
-                </div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right; margin-bottom: 0.5rem;">
-                    ${new Date(item.created_at).toLocaleString()}
-                </div>
-                
-                <!-- Bottom Action Row -->
-                <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
-                    <!-- Status Icons (Neutral) -->
-                    <div style="flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 1rem; font-size: 1.2rem; color: var(--text-color);">
-                        ${metaIcons}
-                    </div>
-
-                    <!-- Remove Button (Neutral) -->
-                    <button style="width: auto; min-width: 140px; padding: 0.75rem 1.5rem; background-color: transparent; color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background 0.2s;" 
-                        onclick="deleteHistoryItem(${item.id})"
-                        onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
-                        onmouseout="this.style.background='transparent'">
-                        <i class="fa-solid fa-trash"></i> Remove
-                    </button>
-                </div>
-            `;
+            el.innerHTML = renderCardHTML(item, isSaved, `deleteHistoryItem(${item.id})`);
             fullHistoryList.appendChild(el);
         });
     }
@@ -630,43 +668,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         items.forEach(item => {
             const el = document.createElement('div');
-            el.className = 'history-card'; // Reuse style
-
-            // Metadata Icons (Neutral)
-            let metaIcons = '<i class="fa-solid fa-bookmark" title="Saved"></i>';
-            if (item.rating === 5) metaIcons += '<i class="fa-solid fa-thumbs-up" title="Liked"></i>';
-            if (item.rating === 1) metaIcons += '<i class="fa-solid fa-thumbs-down" title="Disliked"></i>';
-            if (item.suggestion) metaIcons += '<i class="fa-solid fa-pen-to-square" title="Edited"></i>';
-
-            el.innerHTML = `
-                <div class="history-content-row">
-                    <div class="lang-label">From: ${item.source_lang || '?'}</div>
-                    <div class="text-content">${escapeHtml(item.original_text)}</div>
-                </div>
-                <div class="history-content-row">
-                    <div class="lang-label">To: ${item.target_lang || '?'}</div>
-                    <div class="text-content" style="color: var(--primary-color)">${escapeHtml(item.translated_text)}</div>
-                </div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right; margin-bottom: 0.5rem;">
-                    ${new Date(item.created_at).toLocaleString()}
-                </div>
-                
-                <!-- Bottom Action Row -->
-                <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
-                    <!-- Status Icons (Neutral) -->
-                    <div style="flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 1rem; font-size: 1.2rem; color: var(--text-color);">
-                        ${metaIcons}
-                    </div>
-
-                    <!-- Remove Button (Neutral) -->
-                    <button style="width: auto; min-width: 140px; padding: 0.75rem 1.5rem; background-color: transparent; color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background 0.2s;" 
-                        onclick="deleteSavedItem(${item.id})"
-                        onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
-                        onmouseout="this.style.background='transparent'">
-                        <i class="fa-solid fa-trash"></i> Remove
-                    </button>
-                </div>
-             `;
+            el.className = 'history-card';
+            el.innerHTML = renderCardHTML(item, true, `deleteSavedItem(${item.id})`);
             savedList.appendChild(el);
         });
     }

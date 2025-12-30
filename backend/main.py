@@ -162,55 +162,36 @@ async def get_history(
     
     history_items = query.order_by(db_models.TranslationHistory.created_at.desc()).all()
     
-    # Enrich with metadata
+    # Batch fetch metadata for efficient lookup (O(1)) matches
+    # 1. Saved status
+    saved_query = db.query(db_models.SavedTranslation.original_text, db_models.SavedTranslation.translated_text)\
+        .filter(db_models.SavedTranslation.user_id == current_user.id).all()
+    saved_set = {(s.original_text, s.translated_text) for s in saved_query}
+
+    # 2. Ratings
+    rating_query = db.query(db_models.TranslationRating.original_text, db_models.TranslationRating.translated_text, db_models.TranslationRating.rating)\
+        .filter(db_models.TranslationRating.user_id == current_user.id).all()
+    rating_map = {(r.original_text, r.translated_text): r.rating for r in rating_query}
+
+    # 3. Contributions
+    contrib_query = db.query(db_models.TranslationContribution.original_text, db_models.TranslationContribution.suggested_translation)\
+        .filter(db_models.TranslationContribution.user_id == current_user.id).all()
+    contrib_map = {c.original_text: c.suggested_translation for c in contrib_query}
+
     results = []
-    try:
-        for item in history_items:
-            # Check if saved
-            is_saved = db.query(db_models.SavedTranslation).filter(
-                db_models.SavedTranslation.user_id == current_user.id,
-                db_models.SavedTranslation.original_text == item.original_text,
-                db_models.SavedTranslation.translated_text == item.translated_text
-            ).first() is not None
-
-            # Check rating
-            rating_obj = db.query(db_models.TranslationRating).filter(
-                db_models.TranslationRating.user_id == current_user.id,
-                db_models.TranslationRating.original_text == item.original_text,
-                db_models.TranslationRating.translated_text == item.translated_text
-            ).first()
-            rating = rating_obj.rating if rating_obj else None
-
-            # Check contribution
-            contrib_obj = db.query(db_models.TranslationContribution).filter(
-                db_models.TranslationContribution.user_id == current_user.id,
-                db_models.TranslationContribution.original_text == item.original_text
-            ).first()
-            suggestion = contrib_obj.suggested_translation if contrib_obj else None
-
-            # Construct response
-            resp = schemas.HistoryResponse(
-                id=item.id,
-                original_text=item.original_text,
-                translated_text=item.translated_text,
-                source_lang=item.source_lang,
-                target_lang=item.target_lang,
-                created_at=item.created_at,
-                is_saved=is_saved,
-                rating=rating,
-                suggestion=suggestion
-            )
-            results.append(resp)
-    except Exception as e:
-        print(f"Error enriching history: {e}")
-        # Valid fallback: return simple list or empty list if critical, 
-        # but better to log and maybe return what we have?
-        # For now, let's just return basic items if enrichment fails for a specific one? 
-        # No, just raise HTTP exception to see it in frontend or log it.
-        # Ideally, we return the base items without metadata if metadata query fails.
-        # But for debugging "failed to fetch", we want to know why.
-        raise HTTPException(status_code=500, detail=f"History Load Error: {str(e)}")
-
+    for item in history_items:
+        results.append(schemas.HistoryResponse(
+            id=item.id,
+            original_text=item.original_text,
+            translated_text=item.translated_text,
+            source_lang=item.source_lang,
+            target_lang=item.target_lang,
+            created_at=item.created_at,
+            is_saved=(item.original_text, item.translated_text) in saved_set,
+            rating=rating_map.get((item.original_text, item.translated_text)),
+            suggestion=contrib_map.get(item.original_text)
+        ))
+    
     return results
 
 
@@ -219,6 +200,16 @@ async def delete_history_item(history_id: int, current_user: db_models.User = De
     item = db.query(db_models.TranslationHistory).filter(db_models.TranslationHistory.id == history_id, db_models.TranslationHistory.user_id == current_user.id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
+    
+    # Logic: Delete History -> Delete Saved (One-way Sync)
+    db.query(db_models.SavedTranslation).filter(
+        db_models.SavedTranslation.user_id == current_user.id,
+        db_models.SavedTranslation.original_text == item.original_text,
+        db_models.SavedTranslation.translated_text == item.translated_text,
+        db_models.SavedTranslation.source_lang == item.source_lang,
+        db_models.SavedTranslation.target_lang == item.target_lang
+    ).delete()
+
     db.delete(item)
     db.commit()
     return {"message": "Deleted"}
@@ -227,19 +218,48 @@ async def delete_history_item(history_id: int, current_user: db_models.User = De
 @app.delete("/history")
 async def clear_all_history(current_user: db_models.User = Depends(get_current_user), db: Session = Depends(database.get_db)):
     db.query(db_models.TranslationHistory).filter(db_models.TranslationHistory.user_id == current_user.id).delete()
+    # User Request: "Delete All History" must also delete "Saved Translations" because History is the superset.
+    db.query(db_models.SavedTranslation).filter(db_models.SavedTranslation.user_id == current_user.id).delete()
     db.commit()
-    return {"message": "All history cleared"}
+    return {"message": "All history and saved translations cleared"}
 
 
 # 2. SAVED TRANSLATIONS (Bookmarks)
 @app.post("/saved-translations", response_model=schemas.SavedTranslationResponse)
 async def save_translation(item: schemas.SavedTranslationCreate, current_user: db_models.User = Depends(get_current_user), db: Session = Depends(database.get_db)):
     try:
+        # Check if already saved
+        existing = db.query(db_models.SavedTranslation).filter(
+            db_models.SavedTranslation.user_id == current_user.id,
+            db_models.SavedTranslation.original_text == item.original_text,
+            db_models.SavedTranslation.translated_text == item.translated_text
+        ).first()
+        
+        if existing:
+            return existing
+
         new_item = db_models.SavedTranslation(**item.dict(), user_id=current_user.id)
         db.add(new_item)
         db.commit()
         db.refresh(new_item)
         return new_item
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@app.post("/saved-translations/unsave")
+async def unsave_translation(item: schemas.SavedTranslationCreate, current_user: db_models.User = Depends(get_current_user), db: Session = Depends(database.get_db)):
+    try:
+        deleted_count = db.query(db_models.SavedTranslation).filter(
+            db_models.SavedTranslation.user_id == current_user.id,
+            db_models.SavedTranslation.original_text == item.original_text,
+            db_models.SavedTranslation.translated_text == item.translated_text
+        ).delete()
+        db.commit()
+        if deleted_count == 0:
+            return {"message": "Item was not saved"}
+        return {"message": "Unsaved successfully"}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
