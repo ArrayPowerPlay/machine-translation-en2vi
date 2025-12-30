@@ -1,9 +1,9 @@
+# pyright: reportOptionalMemberAccess=false
 from transformers import (
     Seq2SeqTrainingArguments, 
     Seq2SeqTrainer,
     DataCollatorForSeq2Seq
 )
-
 import matplotlib.pyplot as plt
 from model import get_model_and_tokenizer
 from dataset_utils import load_and_preprocess_data
@@ -35,11 +35,11 @@ def run_finetuning(
     }
     # target_lang (en or vi) -> mapped code -> token id
     target_code = lang_code_map.get(target_lang, "vi_VN")
-    model.config.forced_bos_token_id = tokenizer.lang_code_to_id[target_code]
+    model.config.forced_bos_token_id = tokenizer.lang_code_to_id[target_code]  # type: ignore
     print(f"Forced BOS token ID for evaluation set to: {model.config.forced_bos_token_id} ({target_code})")
 
     # 4. Chuẩn bị dữ liệu
-    tokenized_train, tokenized_eval = load_and_preprocess_data(
+    tokenized_train, tokenized_eval = load_and_preprocess_data(  # type: ignore
         dataset_path, 
         dataset_name, 
         dataset_config, 
@@ -80,7 +80,6 @@ def run_finetuning(
         train_dataset=tokenized_train,
         eval_dataset=tokenized_eval,
         data_collator=data_collator,
-        tokenizer=tokenizer,
     )
 
     # 7. Train

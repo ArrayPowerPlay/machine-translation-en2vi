@@ -61,6 +61,7 @@ def load_model(direction="en2vi"):
         print(f"Error loading model {direction}: {e}")
         return None, None
 
+
 def perform_translation(text: str, source_lang: str, target_lang: str):
     # Xác định hướng dịch
     if source_lang == "en" and target_lang == "vi":
