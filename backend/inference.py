@@ -83,13 +83,13 @@ def perform_translation(text: str, source_lang: str, target_lang: str):
         return None, "Unsupported language code"
 
     tokenizer.src_lang = src_code
-    inputs = tokenizer(text, return_tensors="pt", max_length=256, truncation=True).to(model.device)
+    inputs = tokenizer(text, return_tensors="pt", max_length=1024, truncation=True).to(model.device)
     
     with torch.no_grad():
         outputs = model.generate(
             input_ids=inputs.input_ids,
             attention_mask=inputs.attention_mask,
-            max_length=256,
+            max_length=1024,
             decoder_start_token_id=tokenizer.lang_code_to_id[tgt_code],
             num_beams=1, # Reduced for stability
             early_stopping=False

@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inputText) {
         inputText.addEventListener('input', () => {
             const charCount = document.getElementById('charCount');
-            if (charCount) charCount.textContent = `${inputText.value.length} / 5000`;
+            if (charCount) charCount.textContent = `${inputText.value.length} / 1000`;
         });
     }
 
