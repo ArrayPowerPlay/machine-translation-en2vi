@@ -1,0 +1,285 @@
+{
+  "added_tokens_decoder": {
+    "0": {
+      "content": "<s>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "1": {
+      "content": "<pad>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "2": {
+      "content": "</s>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "3": {
+      "content": "<unk>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90300": {
+      "content": "ar_AR",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90301": {
+      "content": "cs_CZ",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90302": {
+      "content": "de_DE",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90303": {
+      "content": "en_XX",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90304": {
+      "content": "es_XX",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90305": {
+      "content": "et_EE",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90306": {
+      "content": "fi_FI",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90307": {
+      "content": "fr_XX",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90308": {
+      "content": "gu_IN",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90309": {
+      "content": "hi_IN",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90310": {
+      "content": "it_IT",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90311": {
+      "content": "ja_XX",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90312": {
+      "content": "kk_KZ",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90313": {
+      "content": "ko_KR",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90314": {
+      "content": "lt_LT",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90315": {
+      "content": "lv_LV",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90316": {
+      "content": "my_MM",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90317": {
+      "content": "ne_NP",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90318": {
+      "content": "nl_XX",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90319": {
+      "content": "ro_RO",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90320": {
+      "content": "ru_RU",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90321": {
+      "content": "si_LK",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90322": {
+      "content": "tr_TR",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90323": {
+      "content": "vi_VN",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90324": {
+      "content": "zh_CN",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "90325": {
+      "content": "<mask>",
+      "lstrip": true,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    }
+  },
+  "additional_special_tokens": [
+    "ar_AR",
+    "cs_CZ",
+    "de_DE",
+    "en_XX",
+    "es_XX",
+    "et_EE",
+    "fi_FI",
+    "fr_XX",
+    "gu_IN",
+    "hi_IN",
+    "it_IT",
+    "ja_XX",
+    "kk_KZ",
+    "ko_KR",
+    "lt_LT",
+    "lv_LV",
+    "my_MM",
+    "ne_NP",
+    "nl_XX",
+    "ro_RO",
+    "ru_RU",
+    "si_LK",
+    "tr_TR",
+    "vi_VN",
+    "zh_CN"
+  ],
+  "bos_token": "<s>",
+  "clean_up_tokenization_spaces": false,
+  "cls_token": "<s>",
+  "eos_token": "</s>",
+  "extra_special_tokens": {},
+  "mask_token": "<mask>",
+  "model_max_length": 1000000000000000019884624838656,
+  "pad_token": "<pad>",
+  "sep_token": "</s>",
+  "sp_model_kwargs": {},
+  "src_lang": "vi_VN",
+  "tgt_lang": "en_XX",
+  "tokenizer_class": "MBartTokenizer",
+  "unk_token": "<unk>"
+}
