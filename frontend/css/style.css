@@ -315,19 +315,33 @@ body {
     align-items: center;
 }
 
+.top-bar .actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
 .theme-toggle {
     background: none;
-    border: none;
+    border: 1px solid transparent;
     color: var(--text-color);
     cursor: pointer;
-    font-size: 1.5rem;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background 0.2s;
+    font-size: 1.2rem;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.theme-toggle .fa-sun {
+    color: #f59e0b;
 }
 
 .theme-toggle:hover {
     background: rgba(255, 255, 255, 0.1);
+    border-color: var(--glass-border);
 }
 
 .translation-box {
@@ -360,6 +374,17 @@ body {
     cursor: pointer;
 }
 
+.lang-selector option {
+    background-color: #1e293b;
+    /* Dark Slate to match theme */
+    color: #f8fafc;
+}
+
+[data-theme="light"] .lang-selector option {
+    background-color: #f8fafc;
+    color: #0f172a;
+}
+
 textarea {
     flex: 1;
     background: transparent;
@@ -372,7 +397,8 @@ textarea {
     outline: none;
 }
 
-textarea::placeholder {
+textarea::placeholder,
+input::placeholder {
     color: var(--text-muted);
 }
 

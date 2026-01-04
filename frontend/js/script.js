@@ -15,19 +15,25 @@ function updateThemeIcon(theme) {
     const themeToggle = document.getElementById('themeToggle');
     if (!themeToggle) return;
     const icon = themeToggle.querySelector('i');
+    const text = document.getElementById('themeText');
+
     if (theme === 'dark') {
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
-    } else {
+        // Current is Dark, we want to switch TO Light (Icon: Sun, Text: Light)
         icon.classList.remove('fa-moon');
         icon.classList.add('fa-sun');
+        if (text) text.textContent = "Light";
+    } else {
+        // Current is Light, we want to switch TO Dark (Icon: Moon, Text: Dark)
+        icon.classList.remove('fa-sun');
+        icon.classList.add('fa-moon');
+        if (text) text.textContent = "Dark";
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- INIT ---
     const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    // document.documentElement.setAttribute('data-theme', savedTheme); // Handled by theme-init.js
     updateThemeIcon(savedTheme);
 
     // --- ELEMENTS ---
@@ -61,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isAuthPage = path.includes('login.html');
         // Simple check: if token exists, assume logged in (backend will verify validity on requests)
         if (token) {
-            if (logoutBtn) logoutBtn.style.display = 'inline-block';
+            if (logoutBtn) logoutBtn.style.display = 'flex';
             if (isAuthPage) window.location.href = 'translate.html'; // Redirect if already logged in
         } else {
             if (logoutBtn) logoutBtn.style.display = 'none';

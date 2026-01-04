@@ -59,7 +59,7 @@ def run_finetuning(
         save_total_limit=1,
         num_train_epochs=num_epochs,
         predict_with_generate=True,
-        fp16=True, # Bắt buộc bật Mixed Precision cho P100
+        fp16=True,       # Dùng 16-bit để lưu và tính toán số thập phân
         gradient_accumulation_steps=grad_accumulation,
         logging_dir=f"{output_dir}/logs",
         logging_steps=100,

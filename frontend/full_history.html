@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="js/theme-init.js"></script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/history_card.css">
@@ -42,10 +43,12 @@
                     <button id="themeToggle" class="theme-toggle" title="Toggle Theme"
                         onclick="forceToggleTheme(event)">
                         <i class="fa-solid fa-moon"></i>
+                        <span id="themeText" style="font-size: 1rem; font-weight: 600;">Light</span>
                     </button>
-                    <button id="logoutBtn" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;"
+                    <button id="logoutBtn" class="btn-secondary"
+                        style="padding: 0.5rem 1rem; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;"
                         title="Logout">
-                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <i class="fa-solid fa-right-from-bracket"></i> Log out
                     </button>
                 </div>
             </header>

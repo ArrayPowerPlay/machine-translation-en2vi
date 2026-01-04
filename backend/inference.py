@@ -40,25 +40,40 @@ def load_model(direction="en2vi"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     try:
-        # Load Base Model
-        # device_map="auto" can be unstable on some Windows setups, using explicit device
+        print(f"Attempting to load {base_model_name} from local cache...")
+        # Try loading from local cache first (OFFLINE mode)
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            base_model_name,
+            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+            local_files_only=True
+        ).to(device)
+        
+        tokenizer = AutoTokenizer.from_pretrained(
+            base_model_name, 
+            local_files_only=True
+        )
+        print("Loaded from local cache.")
+
+    except Exception as e:
+        print(f"Local cache cannot found ({e}). Downloading from Hugging Face Hub...")
+        # Fallback to online (requires Internet)
         model = AutoModelForSeq2SeqLM.from_pretrained(
             base_model_name,
             torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
         ).to(device)
         
-        # Load Tokenizer
-        tokenizer = AutoTokenizer.from_pretrained(base_model_name, use_fast=False)
+        tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 
-        # ... (LoRA skipped)
+    # Load LoRA Adapter
+    if os.path.exists(adapter_path):
+        print(f"Loading LoRA adapter from {adapter_path}...")
+        model = PeftModel.from_pretrained(model, adapter_path).to(device)
+    else:
+        print(f"No LoRA adapter found at {adapter_path}. Using base model.")
 
-        models[direction] = model
-        tokenizers[direction] = tokenizer
-        return model, tokenizer
-
-    except Exception as e:
-        print(f"Error loading model {direction}: {e}")
-        return None, None
+    models[direction] = model
+    tokenizers[direction] = tokenizer
+    return model, tokenizer
 
 
 def perform_translation(text: str, source_lang: str, target_lang: str):
@@ -75,7 +90,10 @@ def perform_translation(text: str, source_lang: str, target_lang: str):
     if model is None or tokenizer is None:
         return None, "Model could not be loaded"
     
-    LANG_CODE_MAP = {"en": "en_XX", "vi": "vi_VN"}
+    LANG_CODE_MAP = {
+        "en": "en_XX", 
+        "vi": "vi_VN"
+    }
     src_code = LANG_CODE_MAP.get(source_lang)
     tgt_code = LANG_CODE_MAP.get(target_lang)
     
@@ -91,10 +109,12 @@ def perform_translation(text: str, source_lang: str, target_lang: str):
             attention_mask=inputs.attention_mask,
             max_length=1024,
             decoder_start_token_id=tokenizer.lang_code_to_id[tgt_code],
-            num_beams=1, # Reduced for stability
+            num_beams=1, # Using greedy search for fast and convenient experience
             early_stopping=False
         )
-        
+        # output shape: (batch_size, sequence_length)
+
+    # Convert token ids to words 
     translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
     translated_text = re.sub(r"^[-.\s]+", "", translated_text).strip()
     

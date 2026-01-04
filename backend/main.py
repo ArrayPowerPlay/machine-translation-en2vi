@@ -80,7 +80,7 @@ async def register(user: schemas.UserCreate, db: Session = Depends(database.get_
     
     db_user = db.query(db_models.User).filter(db_models.User.username == user.username).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
+        raise HTTPException(status_code=400, detail="Username already taken. Please choose another one.")
     
     hashed_password = auth.get_password_hash(user.password)
     new_user = db_models.User(username=user.username, hashed_password=hashed_password)
