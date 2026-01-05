@@ -225,12 +225,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             target_lang: document.getElementById('targetLang').value
                         })
                     });
-                    if (response.ok) {
-                        saveBtn.querySelector('i').className = 'fa-regular fa-bookmark';
-                        // Optional: alert("Removed from saved.");
-                    } else {
-                        throw new Error("Failed to unsave");
+                    if (!response.ok) {
+                        const err = await response.json();
+                        alert("Error: " + formatError(err.detail));
+                        return;
                     }
+                    const data = await response.json();
+                    saveBtn.querySelector('i').className = 'fa-regular fa-bookmark';
+                    alert(data.message || "Removed from saved");
                 } else {
                     // SAVE Logic
                     const response = await fetch(`${API_BASE_URL}/saved-translations`, {
@@ -243,12 +245,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             target_lang: document.getElementById('targetLang').value
                         })
                     });
-                    if (response.ok) {
-                        saveBtn.querySelector('i').className = 'fa-solid fa-bookmark';
-                        alert("Saved successfully!");
-                    } else {
-                        throw new Error("Failed to save");
+                    if (!response.ok) {
+                        const err = await response.json();
+                        alert("Error: " + formatError(err.detail));
+                        return;
                     }
+                    const data = await response.json();
+                    saveBtn.querySelector('i').className = 'fa-solid fa-bookmark';
+                    alert(data.message || "Saved successfully");
                 }
             } catch (e) { alert("Error: " + e.message); }
         });
@@ -261,11 +265,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!oText || !tText) return;
 
         try {
-            await fetch(`${API_BASE_URL}/rate`, {
+            const response = await fetch(`${API_BASE_URL}/rate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ original_text: oText, translated_text: tText, rating: score })
             });
+
+            if (!response.ok) {
+                const err = await response.json();
+                alert("Error: " + formatError(err.detail));
+                return;
+            }
+
+            const data = await response.json();
 
             // Visual Feedback
             // Reset both first
@@ -279,8 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.querySelector('i').className = 'fa-solid fa-thumbs-down';
             }
 
-            alert("Thanks for your feedback!");
-        } catch (e) { alert("Error sending feedback"); }
+            alert(data.message || "Rating recorded");
+        } catch (e) { alert("Error sending feedback: " + e.message); }
     }
 
     if (likeBtn) likeBtn.addEventListener('click', () => handleRating(5, likeBtn));
@@ -306,14 +318,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         target_lang: document.getElementById('targetLang').value
                     })
                 });
-                if (response.ok) {
-                    // Visual Feedback: persistent checkmark until next translation
-                    const icon = suggestBtn.querySelector('i');
-                    icon.className = 'fa-solid fa-check';
-                    // removed timeout/revert
-                    alert("Suggestion sent. Thank you!");
+                if (!response.ok) {
+                    const err = await response.json();
+                    alert("Error: " + formatError(err.detail));
+                    return;
                 }
-            } catch (e) { alert("Error sending suggestion"); }
+                const data = await response.json();
+                // Visual Feedback: persistent checkmark until next translation
+                const icon = suggestBtn.querySelector('i');
+                icon.className = 'fa-solid fa-check';
+                alert(data.message || "Suggestion sent");
+            } catch (e) { alert("Error sending suggestion: " + e.message); }
         });
     }
 
@@ -385,13 +400,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteHistoryItem = async (id) => {
         if (!confirm("Delete this item?")) return;
         try {
-            await fetch(`${API_BASE_URL}/history/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/history/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!response.ok) {
+                const err = await response.json();
+                alert("Error: " + formatError(err.detail));
+                return;
+            }
+            const data = await response.json();
             loadHistory();
+            alert(data.message || "Item deleted");
         } catch (e) {
-            alert("Error deleting item");
+            alert("Error deleting item: " + e.message);
         }
     }
 
@@ -413,13 +435,20 @@ document.addEventListener('DOMContentLoaded', () => {
         clearHistoryBtn.addEventListener('click', async () => {
             if (!confirm("Clear ALL history?")) return;
             try {
-                await fetch(`${API_BASE_URL}/history`, {
+                const response = await fetch(`${API_BASE_URL}/history`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+                if (!response.ok) {
+                    const err = await response.json();
+                    alert("Error: " + formatError(err.detail));
+                    return;
+                }
+                const data = await response.json();
                 loadHistory();
+                alert(data.message || "History cleared");
             } catch (e) {
-                alert("Error clearing history");
+                alert("Error clearing history: " + e.message);
             }
         });
     }
@@ -454,11 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedSearch) {
             savedSearch.addEventListener('input', (e) => {
                 const term = e.target.value.toLowerCase();
-                const items = savedList.querySelectorAll('.history-card');
-                items.forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    item.style.display = text.includes(term) ? 'block' : 'none';
-                });
+                loadSavedTranslations(term);
             });
         }
 
@@ -471,12 +496,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    if (res.ok) {
-                        loadSavedTranslations();
-                        alert("All saved translations deleted.");
-                    } else {
-                        alert("Failed to delete all.");
+                    if (!res.ok) {
+                        const err = await res.json();
+                        alert("Error: " + formatError(err.detail));
+                        return;
                     }
+                    const data = await res.json();
+                    loadSavedTranslations();
+                    alert(data.message || "All saved translations deleted");
                 } catch (e) { alert("Error: " + e.message); }
             });
         }
@@ -507,12 +534,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
-                    if (res.ok) {
-                        loadFullHistory();
-                        alert("History cleared.");
-                    } else {
-                        alert("Failed to clear history.");
+                    if (!res.ok) {
+                        const err = await res.json();
+                        alert("Error: " + formatError(err.detail));
+                        return;
                     }
+                    const data = await res.json();
+                    loadFullHistory();
+                    alert(data.message || "History cleared");
                 } catch (e) { alert("Error: " + e.message); }
             });
         }
@@ -626,11 +655,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) {
-                loadFullHistory(); // Refresh list
-            } else {
-                alert("Failed to delete item.");
+            if (!res.ok) {
+                const err = await res.json();
+                alert("Error: " + formatError(err.detail));
+                return;
             }
+            const data = await res.json();
+            loadFullHistory(); // Refresh list
+            alert(data.message || "Item deleted");
         } catch (e) { alert("Error: " + e.message); }
     };
 
@@ -643,18 +675,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) {
-                loadSavedTranslations();
-            } else {
-                alert("Failed to remove saved item.");
+            if (!res.ok) {
+                const err = await res.json();
+                alert("Error: " + formatError(err.detail));
+                return;
             }
+            const data = await res.json();
+            loadSavedTranslations();
+            alert(data.message || "Item removed");
         } catch (e) { alert("Error: " + e.message); }
     };
 
-    async function loadSavedTranslations() {
+    async function loadSavedTranslations(searchTerm = '') {
         if (!token) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/saved-translations`, {
+            let url = `${API_BASE_URL}/saved-translations`;
+            if (searchTerm) {
+                url += `?search=${encodeURIComponent(searchTerm)}`;
+            }
+            const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -683,12 +722,19 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteSavedItem = async (id) => {
         if (!confirm("Remove from saved?")) return;
         try {
-            await fetch(`${API_BASE_URL}/saved-translations/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/saved-translations/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!res.ok) {
+                const err = await res.json();
+                alert("Error: " + formatError(err.detail));
+                return;
+            }
+            const data = await res.json();
             loadSavedTranslations();
-        } catch (e) { alert("Error removing item"); }
+            alert(data.message || "Item removed");
+        } catch (e) { alert("Error removing item: " + e.message); }
     }
 
     // Auto-switch languages

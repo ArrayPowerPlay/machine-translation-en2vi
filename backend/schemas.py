@@ -45,7 +45,7 @@ class SavedTranslationCreate(BaseModel):
     translated_text: str
     source_lang: str
     target_lang: str
-    note: Optional[str] = None
+
 
 
 class SavedTranslationResponse(SavedTranslationCreate):

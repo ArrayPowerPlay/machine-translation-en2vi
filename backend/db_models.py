@@ -33,7 +33,7 @@ class SavedTranslation(Base):
     translated_text = Column(Text, nullable=False)
     source_lang = Column(String(10))
     target_lang = Column(String(10))
-    note = Column(Text, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
