@@ -47,7 +47,6 @@ class SavedTranslationCreate(BaseModel):
     target_lang: str
 
 
-
 class SavedTranslationResponse(SavedTranslationCreate):
     id: int
     created_at: datetime
