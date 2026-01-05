@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     const data = await response.json();
                     saveBtn.querySelector('i').className = 'fa-regular fa-bookmark';
-                    alert(data.message || "Removed from saved");
+                    // No message when unsave (silent)
                 } else {
                     // SAVE Logic
                     const response = await fetch(`${API_BASE_URL}/saved-translations`, {
@@ -264,8 +264,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const tText = outputText.value;
         if (!oText || !tText) return;
 
+        // Check if button is already active (toggle off)
+        const isActive = btn.querySelector('i').classList.contains('fa-solid');
+
         try {
-            const response = await fetch(`${API_BASE_URL}/rate`, {
+            let url = `${API_BASE_URL}/rate`;
+            if (isActive) {
+                url = `${API_BASE_URL}/rate/undo`;  // Call undo endpoint
+            }
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ original_text: oText, translated_text: tText, rating: score })
@@ -279,19 +287,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
-            // Visual Feedback
-            // Reset both first
-            likeBtn.querySelector('i').className = 'fa-regular fa-thumbs-up';
-            dislikeBtn.querySelector('i').className = 'fa-regular fa-thumbs-down';
-
-            // Set active
-            if (score === 5) {
-                btn.querySelector('i').className = 'fa-solid fa-thumbs-up';
+            // Visual Feedback: Toggle logic
+            if (isActive) {
+                // User clicked again to deselect - remove solid class (unlike/undislike)
+                btn.querySelector('i').className = score === 5 ? 'fa-regular fa-thumbs-up' : 'fa-regular fa-thumbs-down';
             } else {
-                btn.querySelector('i').className = 'fa-solid fa-thumbs-down';
+                // User clicked to select - reset both then set this one
+                likeBtn.querySelector('i').className = 'fa-regular fa-thumbs-up';
+                dislikeBtn.querySelector('i').className = 'fa-regular fa-thumbs-down';
+                btn.querySelector('i').className = score === 5 ? 'fa-solid fa-thumbs-up' : 'fa-solid fa-thumbs-down';
             }
 
-            alert(data.message || "Rating recorded");
+            // Show message only if not empty (empty = unlike/undislike)
+            if (data.message) {
+                alert(data.message);
+            }
+
+            // Reload full history to sync rating changes
+            if (fullHistoryList) {
+                loadFullHistory();
+            }
         } catch (e) { alert("Error sending feedback: " + e.message); }
     }
 
