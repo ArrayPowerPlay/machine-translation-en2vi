@@ -172,7 +172,10 @@ async def get_history(
     """Trả về tất cả bản dịch"""
     query = db.query(db_models.TranslationHistory).filter(db_models.TranslationHistory.user_id == current_user.id)
     if search:
-        query = query.filter(db_models.TranslationHistory.original_text.contains(search))
+        query = query.filter(
+            (db_models.TranslationHistory.original_text.ilike(f"%{search}%")) | 
+            (db_models.TranslationHistory.translated_text.ilike(f"%{search}%"))
+        )
     
     history_items = query.order_by(db_models.TranslationHistory.created_at.desc()).all()
     
@@ -290,11 +293,18 @@ async def unsave_translation(
 
 @app.get("/saved-translations", response_model=List[schemas.SavedTranslationResponse])
 async def get_saved_translations(
+    search: Optional[str] = None,
     current_user: db_models.User = Depends(get_current_user), 
     db: Session = Depends(database.get_db)
 ):
     """Trả về tất cả bản dịch đã lưu"""
-    return db.query(db_models.SavedTranslation).filter(db_models.SavedTranslation.user_id == current_user.id).order_by(db_models.SavedTranslation.created_at.desc()).all()
+    query = db.query(db_models.SavedTranslation).filter(db_models.SavedTranslation.user_id == current_user.id)
+    if search:
+        query = query.filter(
+            (db_models.SavedTranslation.original_text.ilike(f"%{search}%")) | 
+            (db_models.SavedTranslation.translated_text.ilike(f"%{search}%"))
+        )
+    return query.order_by(db_models.SavedTranslation.created_at.desc()).all()
 
 
 @app.delete("/saved-translations/{saved_id}")

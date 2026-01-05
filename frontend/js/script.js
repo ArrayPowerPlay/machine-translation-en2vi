@@ -347,24 +347,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- SEARCH LOGIC ---
+    // --- SEARCH LOGIC (removed - using server-side search instead) ---
     if (historySearch) {
         historySearch.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const items = document.querySelectorAll('.history-item');
-            items.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                item.style.display = text.includes(term) ? 'flex' : 'none';
-            });
+            const term = e.target.value;
+            loadHistory(term);
         });
     }
 
     // --- HISTORY LOGIC ---
-    async function loadHistory() {
+    async function loadHistory(searchTerm = '') {
         if (!historyList || !token) return; // Only load if logged in and on translate page
 
         try {
-            const response = await fetch(`${API_BASE_URL}/history`, {
+            let url = `${API_BASE_URL}/history`;
+            if (searchTerm) {
+                url += `?search=${encodeURIComponent(searchTerm)}`;
+            }
+            const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
@@ -426,6 +426,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const data = await response.json();
             loadHistory();
+            // Also reload full history and saved if on those pages
+            if (fullHistoryList) loadFullHistory();
+            if (savedList) loadSavedTranslations();
+            alert(data.message || "Item deleted");
+        } catch (e) {
+            alert("Error deleting item: " + e.message);
+        }
+    }
+
+    window.deleteSavedItem = async (id) => {
+        if (!confirm("Delete this item?")) return;
+        try {
+            const response = await fetch(`${API_BASE_URL}/saved-translations/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                alert("Error: " + formatError(err.detail));
+                return;
+            }
+            const data = await response.json();
+            if (savedList) loadSavedTranslations();
+            // Also reload full history if on that page
+            if (fullHistoryList) loadFullHistory();
             alert(data.message || "Item deleted");
         } catch (e) {
             alert("Error deleting item: " + e.message);
@@ -494,10 +519,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedList) {
         loadSavedTranslations();
 
-        // Search
+        // Search - server-side
         if (savedSearch) {
             savedSearch.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
+                const term = e.target.value;
                 loadSavedTranslations(term);
             });
         }
@@ -528,15 +553,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (fullHistoryList) {
         loadFullHistory();
 
-        // Search
+        // Search - server-side
         if (fullHistorySearch) {
             fullHistorySearch.addEventListener('input', (e) => {
-                const term = e.target.value.toLowerCase();
-                const items = fullHistoryList.querySelectorAll('.history-card');
-                items.forEach(item => {
-                    const text = item.textContent.toLowerCase();
-                    item.style.display = text.includes(term) ? 'block' : 'none';
-                });
+                const term = e.target.value;
+                loadFullHistory(term);
             });
         }
 
@@ -562,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function loadFullHistory() {
+    async function loadFullHistory(searchTerm = '') {
         if (!token) {
             fullHistoryList.innerHTML = `
                 <div style="text-align:center; padding:2rem; color: var(--text-muted)">
@@ -574,8 +595,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Fetch History and Saved items to check status
+            let histUrl = `${API_BASE_URL}/history`;
+            if (searchTerm) {
+                histUrl += `?search=${encodeURIComponent(searchTerm)}`;
+            }
             const [histRes, savedRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/history`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(histUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetch(`${API_BASE_URL}/saved-translations`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
@@ -662,44 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Export delete function for Full History items
-    window.deleteHistoryItem = async (id) => {
-        if (!confirm("Delete this history record?")) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/history/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) {
-                const err = await res.json();
-                alert("Error: " + formatError(err.detail));
-                return;
-            }
-            const data = await res.json();
-            loadFullHistory(); // Refresh list
-            alert(data.message || "Item deleted");
-        } catch (e) { alert("Error: " + e.message); }
-    };
 
-    // Export delete function for Saved items (existing logic needs to be globally accessible if inline onclick used)
-    window.deleteSavedItem = async (id) => {
-        if (!confirm("Remove from saved?")) return;
-        try {
-            // Saved items are deleted by ID
-            const res = await fetch(`${API_BASE_URL}/saved-translations/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) {
-                const err = await res.json();
-                alert("Error: " + formatError(err.detail));
-                return;
-            }
-            const data = await res.json();
-            loadSavedTranslations();
-            alert(data.message || "Item removed");
-        } catch (e) { alert("Error: " + e.message); }
-    };
 
     async function loadSavedTranslations(searchTerm = '') {
         if (!token) return;
@@ -711,12 +699,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            
+            if (response.status === 401) {
+                console.warn("Session expired. Logging out...");
+                window.logout();
+                return;
+            }
+            
             if (response.ok) {
                 const items = await response.json();
                 renderSavedList(items);
             }
         } catch (e) {
-            savedList.innerHTML = 'Error loading saved items';
+            if (savedList) savedList.innerHTML = 'Error loading saved items';
         }
     }
 
@@ -732,24 +727,6 @@ document.addEventListener('DOMContentLoaded', () => {
             el.innerHTML = renderCardHTML(item, true, `deleteSavedItem(${item.id})`);
             savedList.appendChild(el);
         });
-    }
-
-    window.deleteSavedItem = async (id) => {
-        if (!confirm("Remove from saved?")) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/saved-translations/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) {
-                const err = await res.json();
-                alert("Error: " + formatError(err.detail));
-                return;
-            }
-            const data = await res.json();
-            loadSavedTranslations();
-            alert(data.message || "Item removed");
-        } catch (e) { alert("Error removing item: " + e.message); }
     }
 
     // Auto-switch languages
