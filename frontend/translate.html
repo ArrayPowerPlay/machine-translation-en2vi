@@ -4,19 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Translate - En - Vi Translator</title>
+    <title>Translation</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <script src="js/theme-init.js"></script>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/style.css">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
-
-
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -49,7 +48,7 @@
             <header class="top-bar">
                 <h2>Translate</h2>
                 <div class="actions">
-                    <button id="themeToggle" class="theme-toggle" title="Toggle Theme"
+                    <button id="themeToggle" class="theme-toggle" title="Change Theme"
                         onclick="forceToggleTheme(event)">
                         <i class="fa-solid fa-moon"></i>
                         <span id="themeText" style="font-size: 1rem; font-weight: 600;">Light</span>
@@ -82,9 +81,7 @@
                     </div>
                 </div>
 
-                <button class="swap-btn" id="swapLangBtn" style="visibility: hidden;">
-                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
-                </button>
+
 
                 <div class="output-group">
                     <select class="lang-selector" id="targetLang">
@@ -135,21 +132,6 @@
                 </a>
             </div>
 
-            <!-- Analysis Panel -->
-            <div class="analysis-panel" style="display: none;">
-                <div class="analysis-card">
-                    <h4>Topic Detection</h4>
-                    <div class="analysis-value" id="topicValue">General</div>
-                </div>
-                <div class="analysis-card">
-                    <h4>Similarity Score</h4>
-                    <div class="analysis-value" id="similarityValue">--</div>
-                </div>
-                <div class="analysis-card">
-                    <h4>Spelling Status</h4>
-                    <div class="analysis-value" id="spellingValue">OK</div>
-                </div>
-            </div>
         </main>
     </div>
 
