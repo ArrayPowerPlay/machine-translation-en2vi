@@ -1,3 +1,4 @@
-backend/finetuning_steps.py
 .env
 backend/__pycache__
+backend/lora-vinai-en2vi
+backend/lora-vinai-vi2en
