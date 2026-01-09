@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class UserCreate(BaseModel):
     username: str
-    password: str = Field(..., min_length=6, description="Password must be at least 6 characters")
+    password: str = Field(..., min_length=6, description="Mật khẩu phải có ít nhất 6 ký tự")
     confirm_password: str
 
 
@@ -21,8 +21,8 @@ class Token(BaseModel):
 
 class TranslationRequest(BaseModel):
     text: str
-    source_lang: str = "en" # 'en' or 'vi'
-    target_lang: str = "vi" # 'vi' or 'en'
+    source_lang: str = "en" # 'en' hoặc 'vi'
+    target_lang: str = "vi" # 'vi' hoặc 'en'
     
 
 class HistoryResponse(BaseModel):

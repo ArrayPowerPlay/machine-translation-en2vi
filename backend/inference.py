@@ -4,11 +4,11 @@ from peft import PeftModel
 import os
 import re
 
-# Global model placeholders
+# Biến toàn cục chứa model
 models = {}
 tokenizers = {}
 
-# Configuration
+# Cấu hình
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 EN2VI_LORA_PATH = os.path.join(BASE_DIR, "lora-vinai-en2vi")
 VI2EN_LORA_PATH = os.path.join(BASE_DIR, "lora-vinai-vi2en")
@@ -36,12 +36,12 @@ def load_model(direction="en2vi"):
         base_model_name = VI2EN_BASE
         adapter_path = VI2EN_LORA_PATH
 
-    # Device Management
+    # Quản lý thiết bị (GPU/CPU)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     try:
         print(f"Attempting to load {base_model_name} from local cache...")
-        # Try loading from local cache first (OFFLINE mode)
+        # Thử load từ cache cục bộ trước
         model = AutoModelForSeq2SeqLM.from_pretrained(
             base_model_name,
             torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
@@ -56,7 +56,7 @@ def load_model(direction="en2vi"):
 
     except Exception as e:
         print(f"Local cache cannot found ({e}). Downloading from Hugging Face Hub...")
-        # Fallback to online (requires Internet)
+        # Chuyển sang tải online 
         model = AutoModelForSeq2SeqLM.from_pretrained(
             base_model_name,
             torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
@@ -64,7 +64,7 @@ def load_model(direction="en2vi"):
         
         tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 
-    # Load LoRA Adapter
+    # Tải LoRA Adapter
     if os.path.exists(adapter_path):
         print(f"Loading LoRA adapter from {adapter_path}...")
         model = PeftModel.from_pretrained(model, adapter_path).to(device)
@@ -77,7 +77,6 @@ def load_model(direction="en2vi"):
 
 
 def perform_translation(text: str, source_lang: str, target_lang: str):
-    # ... (Direction logic same)
     if source_lang == "en" and target_lang == "vi":
         direction = "en2vi"
     elif source_lang == "vi" and target_lang == "en":
@@ -109,12 +108,12 @@ def perform_translation(text: str, source_lang: str, target_lang: str):
             attention_mask=inputs.attention_mask,
             max_length=1024,
             decoder_start_token_id=tokenizer.lang_code_to_id[tgt_code],
-            num_beams=1, # Using greedy search for fast and convenient experience
+            num_beams=1, # Dùng greedy search cho tốc độ nhanh
             early_stopping=False
         )
-        # output shape: (batch_size, sequence_length)
+        # kích thước đầu ra: (batch_size, sequence_length)
 
-    # Convert token ids to words 
+    # Chuyển token ids thành từ 
     translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
     translated_text = re.sub(r"^[-.\s]+", "", translated_text).strip()
     

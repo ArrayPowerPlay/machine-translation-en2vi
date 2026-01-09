@@ -1,7 +1,7 @@
-// --- CONFIGURATION ---
+// --- CẤU HÌNH ---
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-// --- THEME LOGIC (Keep existing logic) ---
+// --- LOGIC GIAO DIỆN (Giữ nguyên logic cũ) ---
 window.forceToggleTheme = (e) => {
     if (e) e.preventDefault();
     const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -18,12 +18,12 @@ function updateThemeIcon(theme) {
     const text = document.getElementById('themeText');
 
     if (theme === 'dark') {
-        // Current is Dark, we want to switch TO Light (Icon: Sun, Text: Light)
+        // Hiện tại là Dark, chuyển sang Light (Icon: Mặt trời, Text: Light)
         icon.classList.remove('fa-moon');
         icon.classList.add('fa-sun');
         if (text) text.textContent = "Light";
     } else {
-        // Current is Light, we want to switch TO Dark (Icon: Moon, Text: Dark)
+        // Hiện tại là Light, chuyển sang Dark (Icon: Mặt trăng, Text: Dark)
         icon.classList.remove('fa-sun');
         icon.classList.add('fa-moon');
         if (text) text.textContent = "Dark";
@@ -31,12 +31,12 @@ function updateThemeIcon(theme) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- INIT ---
+    // --- KHỞI TẠO ---
     const savedTheme = localStorage.getItem('theme') || 'dark';
     // document.documentElement.setAttribute('data-theme', savedTheme); // Handled by theme-init.js
     updateThemeIcon(savedTheme);
 
-    // --- ELEMENTS ---
+    // --- CÁC PHẦN TỬ ---
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
     const inputText = document.getElementById('inputText');
@@ -50,22 +50,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const dislikeBtn = document.getElementById('dislikeBtn');
     const suggestBtn = document.getElementById('suggestBtn');
 
-    // --- NEW CONTROLS ---
+    // --- CÁC ĐIỀU KHIỂN MỚI ---
     const savedSearch = document.getElementById('savedSearch');
     const clearSavedBtn = document.getElementById('clearSavedBtn');
     const fullHistorySearch = document.getElementById('fullHistorySearch');
     const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 
-    // --- STATE ---
+    // --- TRẠNG THÁI ---
     let token = localStorage.getItem('accessToken');
 
     checkAuth();
 
-    // --- AUTH FUNCTIONS ---
+    // --- CÁC HÀM XÁC THỰC ---
     function checkAuth() {
         const path = window.location.pathname;
         const isAuthPage = path.includes('login.html');
-        // Simple check: if token exists, assume logged in (backend will verify validity on requests)
+        // Kiểm tra đơn giản: nếu có token, giả định đã đăng nhập (backend sẽ xác thực khi request)
         if (token) {
             if (logoutBtn) logoutBtn.style.display = 'flex';
             if (isAuthPage) window.location.href = 'translate.html'; // Redirect if already logged in
@@ -80,10 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return detail;
     }
 
-    // --- LOGOUT LOGIC ---
+    // --- LOGIC ĐĂNG XUẤT ---
     window.logout = () => {
         localStorage.removeItem('accessToken');
-        window.location.href = 'index.html'; // Redirect to login
+        window.location.href = 'index.html'; // Chuyển về trang login
     };
 
     if (logoutBtn) {
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Exported for login.html
+    // Xuất hàm cho login.html
     window.handleLogin = async (type) => {
         if (type === 'guest') {
             localStorage.removeItem('accessToken');
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const data = await response.json();
-            localStorage.setItem('accessToken', data.access_token); // Auto login
+            localStorage.setItem('accessToken', data.access_token); // Đăng nhập tự động
             alert("Registration successful!");
             window.location.href = 'translate.html';
         } catch (e) {
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById(`${tab}Form`).style.display = 'block';
     };
 
-    // --- TRANSLATION LOGIC ---
+    // --- LOGIC DỊCH ---
     if (translateBtn) {
         translateBtn.addEventListener('click', async () => {
             const text = inputText.value.trim();
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             translateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Translating...';
             translateBtn.disabled = true;
-            if (saveBtn) saveBtn.querySelector('i').className = 'fa-regular fa-bookmark'; // Reset save icon
+            if (saveBtn) saveBtn.querySelector('i').className = 'fa-regular fa-bookmark'; // Đặt lại icon lưu
             if (likeBtn) likeBtn.querySelector('i').className = 'fa-regular fa-thumbs-up';
             if (dislikeBtn) dislikeBtn.querySelector('i').className = 'fa-regular fa-thumbs-down';
             if (suggestBtn) suggestBtn.querySelector('i').className = 'fa-solid fa-pen-to-square';
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     const data = await response.json();
                     outputText.value = data.translated;
-                    if (headers['Authorization']) loadHistory(); // Reload history if logged in
+                    if (headers['Authorization']) loadHistory(); // Tải lại lịch sử nếu đã đăng nhập
                 }
             } catch (e) {
                 outputText.value = "Network Error: " + e.message;
@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- FEATURE LOGIC ---
+    // --- LOGIC TÍNH NĂNG ---
     if (saveBtn) {
         saveBtn.addEventListener('click', async () => {
             if (!token) return alert("Please login to save.");
@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 if (isSaved) {
-                    // UNSAVE Logic
+                    // Logic HỦY LƯU
                     const response = await fetch(`${API_BASE_URL}/saved-translations/unsave`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -232,9 +232,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     const data = await response.json();
                     saveBtn.querySelector('i').className = 'fa-regular fa-bookmark';
-                    // No message when unsave (silent)
+                    // Không hiện thông báo khi hủy lưu (im lặng)
                 } else {
-                    // SAVE Logic
+                    // Logic LƯU
                     const response = await fetch(`${API_BASE_URL}/saved-translations`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -264,13 +264,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const tText = outputText.value;
         if (!oText || !tText) return;
 
-        // Check if button is already active (toggle off)
+        // Kiểm tra xem nút đã active chưa (để toggle tắt)
         const isActive = btn.querySelector('i').classList.contains('fa-solid');
 
         try {
             let url = `${API_BASE_URL}/rate`;
             if (isActive) {
-                url = `${API_BASE_URL}/rate/undo`;  // Call undo endpoint
+                url = `${API_BASE_URL}/rate/undo`;  // Gọi endpoint hoàn tác
             }
 
             const response = await fetch(url, {
@@ -287,23 +287,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
 
-            // Visual Feedback: Toggle logic
+            // Phản hồi hình ảnh: Logic toggle
             if (isActive) {
-                // User clicked again to deselect - remove solid class (unlike/undislike)
+                // Người dùng click lại để bỏ chọn - bỏ class solid (unlike/undislike)
                 btn.querySelector('i').className = score === 5 ? 'fa-regular fa-thumbs-up' : 'fa-regular fa-thumbs-down';
             } else {
-                // User clicked to select - reset both then set this one
+                // Người dùng click để chọn - reset cả hai rồi set cái này
                 likeBtn.querySelector('i').className = 'fa-regular fa-thumbs-up';
                 dislikeBtn.querySelector('i').className = 'fa-regular fa-thumbs-down';
                 btn.querySelector('i').className = score === 5 ? 'fa-solid fa-thumbs-up' : 'fa-solid fa-thumbs-down';
             }
 
-            // Show message only if not empty (empty = unlike/undislike)
+            // Chỉ hiện thông báo nếu không rỗng (rỗng = unlike/undislike)
             if (data.message) {
                 alert(data.message);
             }
 
-            // Reload full history to sync rating changes
+            // Tải lại lịch sử đầy đủ để đồng bộ thay đổi rating
             if (fullHistoryList) {
                 loadFullHistory();
             }
@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 const data = await response.json();
-                // Visual Feedback: persistent checkmark until next translation
+                // Phản hồi hình ảnh: dấu tích đến khi dịch tiếp theo
                 const icon = suggestBtn.querySelector('i');
                 icon.className = 'fa-solid fa-check';
                 alert(data.message || "Suggestion sent");
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- SEARCH LOGIC (removed - using server-side search instead) ---
+    // --- LOGIC TÌM KIẾM (đã bỏ - dùng tìm kiếm phía server) ---
     if (historySearch) {
         historySearch.addEventListener('input', (e) => {
             const term = e.target.value;
@@ -355,9 +355,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- HISTORY LOGIC ---
+    // --- LOGIC LỊCH SỬ ---
     async function loadHistory(searchTerm = '') {
-        if (!historyList || !token) return; // Only load if logged in and on translate page
+        if (!historyList || !token) return; // Chỉ tải nếu đã đăng nhập và ở trang dịch
 
         try {
             let url = `${API_BASE_URL}/history`;
@@ -393,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         history.forEach(item => {
             const el = document.createElement('div');
             el.className = 'history-item';
-            // Pass metadata to fillTranslation
+            // Truyền metadata cho fillTranslation
             el.onclick = () => fillTranslation(
                 item.original_text,
                 item.translated_text,
@@ -426,7 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const data = await response.json();
             loadHistory();
-            // Also reload full history and saved if on those pages
+            // Cũng tải lại lịch sử đầy đủ và đã lưu nếu đang ở các trang đó
             if (fullHistoryList) loadFullHistory();
             if (savedList) loadSavedTranslations();
             alert(data.message || "Item deleted");
@@ -449,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const data = await response.json();
             if (savedList) loadSavedTranslations();
-            // Also reload full history if on that page
+            // Cũng tải lại lịch sử đầy đủ nếu ở trang đó
             if (fullHistoryList) loadFullHistory();
             alert(data.message || "Item deleted");
         } catch (e) {
@@ -461,7 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (inputText) inputText.value = src;
         if (outputText) outputText.value = tgt;
 
-        // Sync Icons
+        // Đồng bộ Icon
         if (saveBtn) saveBtn.querySelector('i').className = isSaved ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark';
 
         if (likeBtn) likeBtn.querySelector('i').className = (rating === 5) ? 'fa-solid fa-thumbs-up' : 'fa-regular fa-thumbs-up';
@@ -498,10 +498,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // Initial Load
+    // Tải ban đầu
     if (historyList) loadHistory();
 
-    // --- OTHER UI UTILS ---
+    // --- CÁC TIỆN ÍCH UI KHÁC ---
     if (inputText) {
         inputText.addEventListener('input', () => {
             const charCount = document.getElementById('charCount');
@@ -511,15 +511,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // --- FULL HISTORY & SAVED LOGIC ---
+    // --- LOGIC LỊCH SỬ ĐẦY ĐỦ & ĐÃ LƯU ---
     const fullHistoryList = document.getElementById('fullHistoryList');
     const savedList = document.getElementById('savedList');
 
-    // 1. Saved Translations Logic
+    // 1. Logic Bản dịch đã lưu
     if (savedList) {
         loadSavedTranslations();
 
-        // Search - server-side
+        // Tìm kiếm - phía server
         if (savedSearch) {
             savedSearch.addEventListener('input', (e) => {
                 const term = e.target.value;
@@ -527,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Delete All
+        // Xóa tất cả
         if (clearSavedBtn) {
             clearSavedBtn.addEventListener('click', async () => {
                 if (!confirm("Are you sure you want to delete ALL saved translations?")) return;
@@ -549,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 2. Full History Logic
+    // 2. Logic Lịch sử đầy đủ
     if (fullHistoryList) {
         loadFullHistory();
 
@@ -561,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Delete All
+        // Xóa tất cả
         if (clearAllHistoryBtn) {
             clearAllHistoryBtn.addEventListener('click', async () => {
                 if (!confirm("Are you sure you want to delete ALL history?")) return;
@@ -594,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Fetch History and Saved items to check status
+            // Fetch lịch sử và mục đã lưu để kiểm tra trạng thái
             let histUrl = `${API_BASE_URL}/history`;
             if (searchTerm) {
                 histUrl += `?search=${encodeURIComponent(searchTerm)}`;
@@ -608,7 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const history = await histRes.json();
                 const savedItems = savedRes.ok ? await savedRes.json() : [];
 
-                // Create a Set of saved original texts for fast lookup
+                // Tạo Set các text gốc đã lưu để tra cứu nhanh
                 const savedTexts = new Set(savedItems.map(i => i.original_text));
 
                 renderFullHistory(history, savedTexts);
@@ -618,16 +618,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- HELPER: Unified Card Renderer ---
+    // --- HELPER: Render thẻ thống nhất ---
     function renderCardHTML(item, isSaved, deleteFunctionStr) {
-        // Collect Metadata Icons
+        // Thu thập Icon Metadata
         let metaIcons = '';
         if (item.rating === 5) metaIcons += '<i class="fa-solid fa-thumbs-up" title="Liked"></i>';
         if (item.rating === 1) metaIcons += '<i class="fa-solid fa-thumbs-down" title="Disliked"></i>';
         if (item.suggestion) metaIcons += '<i class="fa-solid fa-pen-to-square" title="Edited"></i>';
         if (isSaved) metaIcons += '<i class="fa-solid fa-bookmark" title="Saved"></i>';
 
-        // Suggestion display
+        // Hiển thị gợi ý
         let suggestionHtml = '';
         if (item.suggestion) {
             suggestionHtml = `
@@ -653,14 +653,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${new Date(item.created_at).toLocaleString()}
             </div>
             
-            <!-- Bottom Action Row -->
+            <!-- Hàng hành động dưới cùng -->
             <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
-                <!-- Status Icons (Neutral) -->
+                <!-- Icon trạng thái (Trung tính) -->
                 <div style="flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 1rem; font-size: 1.2rem; color: var(--text-color);">
                     ${metaIcons}
                 </div>
 
-                <!-- Remove Button (Neutral) -->
+                <!-- Nút xóa (Trung tính) -->
                 <button style="width: auto; min-width: 140px; padding: 0.75rem 1.5rem; background-color: transparent; color: var(--text-color); border: 1px solid var(--glass-border); border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background 0.2s;" 
                     onclick="${deleteFunctionStr}"
                     onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'" 
@@ -699,13 +699,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
+
             if (response.status === 401) {
                 console.warn("Session expired. Logging out...");
                 window.logout();
                 return;
             }
-            
+
             if (response.ok) {
                 const items = await response.json();
                 renderSavedList(items);
@@ -729,7 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Auto-switch languages
+    // Tự động chuyển đổi ngôn ngữ
     const sourceLang = document.getElementById('sourceLang');
 
     const targetLang = document.getElementById('targetLang');
