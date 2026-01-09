@@ -6,19 +6,18 @@ from datetime import timedelta
 from typing import List, Optional
 from jose import JWTError, jwt
 
-# Import modules
 from . import db_models
 from . import schemas
 from . import auth
 from . import database
 from . import inference
 
-# Initialize connection to database (postgreSQL) and create DB Tables
+# Khởi tạo kết nối tới database và tạo các bảng dữ liệu
 db_models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="En - Vi Translator Backend")
 
-# Configure CORS
+# Cấu hình CORS
 origins = [
     "http://localhost",
     "http://localhost:5500",
@@ -33,9 +32,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Khởi tạo phương pháp lấy token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-# --- DEPENDENCIES ---
+# Tạo các hàm dependencies
 
 def get_current_user(
     token: str = Depends(oauth2_scheme), 
@@ -48,7 +48,7 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Convert token to data used for login...
+        # Chuyển đổi token thành data
         payload = jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
@@ -66,7 +66,7 @@ def get_current_user_optional(
     token: Optional[str] = Depends(OAuth2PasswordBearer(tokenUrl="login", auto_error=False)), 
     db: Session = Depends(database.get_db)
 ):
-    """Return user if exists token, else return None (allow requests without token - use for guest mode)"""
+    """Trả về user nếu tồn tại token, nếu không trả về None (cho phép đăng nhập không có token - chế độ khách)"""
     if not token:
         return None
     try:
@@ -80,7 +80,7 @@ async def root():
     return {"message": "Welcome to En - Vi Translator API!"}
 
 
-# 1. LOGIN
+# 1. ĐĂNG NHẬP
 @app.post("/register", response_model=schemas.Token)
 async def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     """Đăng ký tài khoản, trả về access token"""
@@ -103,7 +103,7 @@ async def register(user: schemas.UserCreate, db: Session = Depends(database.get_
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# 2. REGISTER
+# 2. ĐĂNG KÝ
 @app.post("/login", response_model=schemas.Token)
 async def login(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
     db_user = db.query(db_models.User).filter(db_models.User.username == user.username).first()
@@ -114,7 +114,7 @@ async def login(user: schemas.UserLogin, db: Session = Depends(database.get_db))
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# 3. TRANSLATE
+# 3. DỊCH
 @app.post("/translate")
 async def translate_text(
     request: schemas.TranslationRequest, 
@@ -162,7 +162,7 @@ async def translate_text(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 4. HISTORY
+# 4. LỊCH SỬ
 @app.get("/history", response_model=List[schemas.HistoryResponse])
 async def get_history(
     search: Optional[str] = None,
@@ -211,7 +211,7 @@ async def get_history(
     return results
 
 
-# 5. HISTORY
+# 5. XÓA LỊCH SỬ
 @app.delete("/history/{history_id}")
 async def delete_history_item(
     history_id: int, 
@@ -250,7 +250,7 @@ async def clear_all_history(
     return {"message": "All history and saved translations cleared"}
 
 
-# 7. SAVED TRANSLATIONS
+# 7. BẢN DỊCH ĐÃ LƯU
 @app.post("/saved-translations", response_model=schemas.SavedTranslationResponse)
 async def save_translation(
     item: schemas.SavedTranslationCreate, 
@@ -332,7 +332,7 @@ async def clear_all_saved_translations(
     return {"message": "All saved translations cleared"}
 
 
-# 8. CONTRIBUTION
+# 8. ĐÓNG GÓP
 @app.post("/contribute")
 async def contribute_translation(
     item: schemas.ContributionCreate, 
@@ -360,7 +360,7 @@ async def contribute_translation(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-# 9. RATING
+# 9. ĐÁNH GIÁ
 @app.post("/rate")
 async def rate_translation(
     item: schemas.RatingCreate, 
