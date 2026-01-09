@@ -24,21 +24,19 @@ def run_finetuning(
     learning_rate=2e-4
 ):
     
-    # 1 & 2 & 3. Tải Model & Tokenizer & Cấu hình LoRA
+    # Tải model, tokenizer và cấu hình LoRA
     model, tokenizer = get_model_and_tokenizer(model_name)
 
-    # Set forced_bos_token_id cho đánh giá mBART
-    # mBART cần cái này để biết ngôn ngữ nào cần tạo ra trong quá trình đánh giá
+    # Set forced_bos_token_id 
     lang_code_map = {
         "en": "en_XX",
         "vi": "vi_VN"
     }
-    # ngôn ngữ đích (en hoặc vi) -> mã map -> token id
     target_code = lang_code_map.get(target_lang, "vi_VN")
     model.config.forced_bos_token_id = tokenizer.lang_code_to_id[target_code]  # type: ignore
     print(f"Forced BOS token ID for evaluation set to: {model.config.forced_bos_token_id} ({target_code})")
 
-    # 4. Chuẩn bị dữ liệu
+    # Chuẩn bị dữ liệu
     tokenized_train, tokenized_eval = load_and_preprocess_data(  # type: ignore
         dataset_path, 
         dataset_name, 
@@ -49,7 +47,7 @@ def run_finetuning(
         target_lang
     )
 
-    # 5. Tham số huấn luyện
+    # Tham số huấn luyện
     args = Seq2SeqTrainingArguments(
         output_dir=output_dir,
         learning_rate=learning_rate,
@@ -73,7 +71,7 @@ def run_finetuning(
 
     data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
 
-    # 6. Khởi tạo Trainer
+    # Khởi tạo Trainer
     trainer = Seq2SeqTrainer(
         model=model,
         args=args,
@@ -82,11 +80,11 @@ def run_finetuning(
         data_collator=data_collator,
     )
 
-    # 7. Huấn luyện (Train)
+    # Huấn luyện (Train)
     print("Starting training...")
     trainer.train()
 
-    # 7.5 Vẽ biểu đồ Loss
+    # Vẽ biểu đồ Loss
     log_history = trainer.state.log_history
     train_steps = []
     train_loss = []
@@ -115,7 +113,7 @@ def run_finetuning(
     plt.savefig(f"{output_dir}/loss_chart.png")
     print(f"Loss chart saved to {output_dir}/loss_chart.png")
 
-    # 8. Lưu Model & Tokenizer
+    # Lưu LoRA adapter và tokenizer
     print(f"Saving LoRA adapter and tokenizer to {output_dir}")
     model.save_pretrained(output_dir)
     tokenizer.save_pretrained(output_dir)

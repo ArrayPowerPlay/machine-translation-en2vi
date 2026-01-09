@@ -36,7 +36,6 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 # Tạo các hàm dependencies
-
 def get_current_user(
     token: str = Depends(oauth2_scheme), 
     db: Session = Depends(database.get_db)
@@ -162,7 +161,7 @@ async def translate_text(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 4. LỊCH SỬ
+# 4. LỊCH SỬ DỊCH
 @app.get("/history", response_model=List[schemas.HistoryResponse])
 async def get_history(
     search: Optional[str] = None,
@@ -179,17 +178,17 @@ async def get_history(
     
     history_items = query.order_by(db_models.TranslationHistory.created_at.desc()).all()
     
-    # 1. Saved status
+    # Trạng thái lưu bản dịch
     saved_query = db.query(db_models.SavedTranslation.original_text, db_models.SavedTranslation.translated_text)\
         .filter(db_models.SavedTranslation.user_id == current_user.id).all()
     saved_set = {(s.original_text, s.translated_text) for s in saved_query}
 
-    # 2. Ratings
+    # 2. Đánh giá bản dịch
     rating_query = db.query(db_models.TranslationRating.original_text, db_models.TranslationRating.translated_text, db_models.TranslationRating.rating)\
         .filter(db_models.TranslationRating.user_id == current_user.id).all()
     rating_map = {(r.original_text, r.translated_text): r.rating for r in rating_query}
 
-    # 3. Contributions
+    # 3. Đóng góp bản dịch
     contrib_query = db.query(db_models.TranslationContribution.original_text, db_models.TranslationContribution.suggested_translation)\
         .filter(db_models.TranslationContribution.user_id == current_user.id).all()
     contrib_map = {c.original_text: c.suggested_translation for c in contrib_query}
@@ -211,7 +210,6 @@ async def get_history(
     return results
 
 
-# 5. XÓA LỊCH SỬ
 @app.delete("/history/{history_id}")
 async def delete_history_item(
     history_id: int, 
@@ -250,7 +248,7 @@ async def clear_all_history(
     return {"message": "All history and saved translations cleared"}
 
 
-# 7. BẢN DỊCH ĐÃ LƯU
+# BẢN DỊCH ĐÃ LƯU
 @app.post("/saved-translations", response_model=schemas.SavedTranslationResponse)
 async def save_translation(
     item: schemas.SavedTranslationCreate, 
@@ -332,7 +330,7 @@ async def clear_all_saved_translations(
     return {"message": "All saved translations cleared"}
 
 
-# 8. ĐÓNG GÓP
+# ĐÓNG GÓP BẢN DỊCH
 @app.post("/contribute")
 async def contribute_translation(
     item: schemas.ContributionCreate, 

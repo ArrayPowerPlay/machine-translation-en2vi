@@ -28,7 +28,7 @@ def get_model_and_tokenizer(model_name):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     
     # 2. Load Model
-    # Load model với fp16 (cho P100)
+    # Load model với fp16
     model = AutoModelForSeq2SeqLM.from_pretrained(
         model_name, 
         device_map="auto",

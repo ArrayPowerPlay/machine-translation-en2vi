@@ -36,7 +36,6 @@ def load_model(direction="en2vi"):
         base_model_name = VI2EN_BASE
         adapter_path = VI2EN_LORA_PATH
 
-    # Quản lý thiết bị (GPU/CPU)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     try:
@@ -77,6 +76,7 @@ def load_model(direction="en2vi"):
 
 
 def perform_translation(text: str, source_lang: str, target_lang: str):
+    """Thực hiện dịch trên model đã load"""
     if source_lang == "en" and target_lang == "vi":
         direction = "en2vi"
     elif source_lang == "vi" and target_lang == "en":
@@ -108,10 +108,10 @@ def perform_translation(text: str, source_lang: str, target_lang: str):
             attention_mask=inputs.attention_mask,
             max_length=1024,
             decoder_start_token_id=tokenizer.lang_code_to_id[tgt_code],
-            num_beams=1, # Dùng greedy search cho tốc độ nhanh
+            num_beams=1, # Dùng greedy search 
             early_stopping=False
         )
-        # kích thước đầu ra: (batch_size, sequence_length)
+        # Output shape: (batch_size, sequence_length)
 
     # Chuyển token ids thành từ 
     translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)

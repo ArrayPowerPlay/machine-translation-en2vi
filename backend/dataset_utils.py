@@ -12,14 +12,12 @@ def load_and_preprocess_data(
     target_lang
 ): 
     """Tải dataset, chia tập train/test và tiền xử lý (tokenize)"""
-    # Chuẩn bị dữ liệu
     if dataset_path and os.path.exists(dataset_path):
         print(f"Loading dataset from {dataset_path}...")
         if dataset_path.endswith('.json'):
             dataset_dict = load_dataset("json", data_files=dataset_path)
         else:
             dataset_dict = load_dataset("csv", data_files=dataset_path)
-        # Trích xuất phần chia tách đầu tiên từ DatasetDict
         dataset = dataset_dict[list(dataset_dict.keys())[0]]
     else:
         print(f"Using dataset {dataset_name} config {dataset_config}...")
@@ -56,11 +54,11 @@ def load_and_preprocess_data(
         source_code = LANG_CODE_MAP.get(source_lang, "en_XX")
         target_code = LANG_CODE_MAP.get(target_lang, "vi_VN")
         
-        # Thiết lập ngôn ngữ nguồn và đích
+        # Thiết lập mã ngôn ngữ nguồn và đích
         tokenizer.src_lang = source_code
         tokenizer.tgt_lang = target_code
         
-        # Tokenize đầu vào & đích
+        # Tokenize input và output
         model_inputs = tokenizer(inputs, text_target=targets, max_length=max_length, truncation=True)
         
         return model_inputs
@@ -68,7 +66,7 @@ def load_and_preprocess_data(
     print("Preprocessing dataset...")
     tokenized_train = train_dataset.map(preprocess_function, batched=True, remove_columns=train_dataset.column_names)
     tokenized_eval = eval_dataset.map(preprocess_function, batched=True, remove_columns=eval_dataset.column_names)
-    # đầu ra sau khi tokenize
+    # Output sau khi tokenize
     # {
     #     'input_ids': [...],
     #     'attention_mask': [...],
