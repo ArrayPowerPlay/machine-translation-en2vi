@@ -40,8 +40,7 @@
                 <p>Experience seamless English to Vietnamese translation powered by advanced AI. Accurate, fast, and
                     context-aware.</p>
                 <div class="cta-group">
-                    <a href="login.html" class="btn-primary btn-lg">Get Started</a>
-
+                    <a href="#" onclick="handleGetStarted(event)" class="btn-primary btn-lg">Get Started</a>
                 </div>
             </div>
         </section>
@@ -59,6 +58,13 @@
         </section>
     </main>
     <script src="js/script.js"></script>
+    <script>
+        function handleGetStarted(e) {
+            e.preventDefault();
+            const token = localStorage.getItem('accessToken');
+            window.location.href = token ? 'translate.html' : 'login.html';
+        }
+    </script>
 </body>
 
 </html>

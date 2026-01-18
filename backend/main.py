@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, status, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import List, Optional
@@ -33,7 +33,7 @@ app.add_middleware(
 )
 
 # Khởi tạo phương pháp lấy token
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Tạo các hàm dependencies
 def get_current_user(
@@ -79,7 +79,7 @@ async def root():
     return {"message": "Welcome to En - Vi Translator API!"}
 
 
-# 1. ĐĂNG NHẬP
+# 1. ĐĂNG KÝ
 @app.post("/register", response_model=schemas.Token)
 async def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     """Đăng ký tài khoản, trả về access token"""
@@ -102,11 +102,27 @@ async def register(user: schemas.UserCreate, db: Session = Depends(database.get_
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# 2. ĐĂNG KÝ
+# 2.1. ĐĂNG NHẬP
 @app.post("/login", response_model=schemas.Token)
 async def login(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
+    """Đăng nhập vào tài khoản, trả về access token"""
     db_user = db.query(db_models.User).filter(db_models.User.username == user.username).first()
     if not db_user or not auth.verify_password(user.password, db_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+    
+    access_token = auth.create_access_token(data={"sub": db_user.username}, expires_delta=timedelta(minutes=30))
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+# 2.2. ĐĂNG NHẬP CHO SWAGGER UI
+@app.post("/token", response_model=schemas.Token)
+async def login_for_swagger(
+    form_data: OAuth2PasswordRequestForm = Depends(), 
+    db: Session = Depends(database.get_db)
+):
+    """Đăng nhập cho Swagger UI"""
+    db_user = db.query(db_models.User).filter(db_models.User.username == form_data.username).first()
+    if not db_user or not auth.verify_password(form_data.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Incorrect username or password")
     
     access_token = auth.create_access_token(data={"sub": db_user.username}, expires_delta=timedelta(minutes=30))
