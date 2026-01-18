@@ -83,9 +83,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LOGIC ĐĂNG XUẤT ---
     window.logout = () => {
-        localStorage.removeItem('accessToken');
-        window.location.href = 'index.html';
+        if (confirm("Are you sure you want to log out?")) {
+            localStorage.removeItem('accessToken');
+            window.location.href = 'index.html';
+        }
     };
+
+    // Logout tự động khi token hết hạn (không hỏi xác nhận)
+    function forceLogout() {
+        localStorage.removeItem('accessToken');
+        window.location.href = 'login.html';
+    }
 
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
@@ -230,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 saveBtn.querySelector('i').className = isSaved ? 'fa-regular fa-bookmark' : 'fa-solid fa-bookmark';
                 if (!isSaved && data.message) alert(data.message);
+                loadHistory(); // Cập nhật sidebar
             } catch (e) { alert("Error: " + e.message); }
         });
     }
@@ -268,6 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (data.message) alert(data.message);
+            loadHistory(); // Cập nhật sidebar
             if (fullHistoryList) loadFullHistory();
         } catch (e) { alert("Error sending feedback: " + e.message); }
     }
@@ -304,6 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 suggestBtn.querySelector('i').className = 'fa-solid fa-check';
                 alert(data.message || "Suggestion sent");
+                loadHistory(); // Cập nhật sidebar
             } catch (e) { alert("Error sending suggestion: " + e.message); }
         });
     }
@@ -323,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
 
             if (response.status === 401) {
-                window.logout();
+                forceLogout();
                 return;
             }
 
@@ -584,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
 
             if (response.status === 401) {
-                window.logout();
+                forceLogout();
                 return;
             }
 

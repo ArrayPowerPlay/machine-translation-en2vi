@@ -33,11 +33,11 @@ def run_finetuning(
         "vi": "vi_VN"
     }
     target_code = lang_code_map.get(target_lang, "vi_VN")
-    model.config.forced_bos_token_id = tokenizer.lang_code_to_id[target_code]  # type: ignore
+    model.config.forced_bos_token_id = tokenizer.lang_code_to_id[target_code] 
     print(f"Forced BOS token ID for evaluation set to: {model.config.forced_bos_token_id} ({target_code})")
 
     # Chuẩn bị dữ liệu
-    tokenized_train, tokenized_eval = load_and_preprocess_data(  # type: ignore
+    tokenized_train, tokenized_eval = load_and_preprocess_data(  
         dataset_path, 
         dataset_name, 
         dataset_config, 
