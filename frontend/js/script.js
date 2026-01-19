@@ -62,11 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function checkAuth() {
         const path = window.location.pathname;
         const isAuthPage = path.includes('login.html');
+        const loginBtn = document.getElementById('loginBtn');
         if (token) {
             if (logoutBtn) logoutBtn.style.display = 'flex';
+            if (loginBtn) loginBtn.style.display = 'none';
             if (isAuthPage) window.location.href = 'translate.html';
         } else {
             if (logoutBtn) logoutBtn.style.display = 'none';
+            if (loginBtn) loginBtn.style.display = 'flex';
         }
     }
 
@@ -587,7 +590,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadSavedTranslations(searchTerm = '') {
-        if (!token) return;
+        if (!token) {
+            savedList.innerHTML = `
+                <div style="text-align:center; padding:2rem; color: var(--text-muted)">
+                    <p style="margin-bottom:1rem;">Please login to view your saved translations.</p>
+                    <a href="login.html" class="btn-primary">Login Now</a>
+                </div>`;
+            return;
+        }
         try {
             let url = `${API_BASE_URL}/saved-translations`;
             if (searchTerm) url += `?search=${encodeURIComponent(searchTerm)}`;
