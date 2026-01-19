@@ -40,29 +40,21 @@ class HistoryResponse(BaseModel):
         from_attributes = True
 
 
-class SavedTranslationCreate(BaseModel):
+class SaveTranslationRequest(BaseModel):
     original_text: str
     translated_text: str
     source_lang: str
     target_lang: str
 
 
-class SavedTranslationResponse(SavedTranslationCreate):
-    id: int
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-
-class ContributionCreate(BaseModel):
+class ContributionRequest(BaseModel):
     original_text: str
     suggested_translation: str
     source_lang: str
     target_lang: str
 
 
-class RatingCreate(BaseModel):
+class RatingRequest(BaseModel):
     original_text: str
     translated_text: str
     rating: int = Field(..., ge=1, le=5)
