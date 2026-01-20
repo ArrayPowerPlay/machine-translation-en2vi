@@ -1,4 +1,3 @@
-# pyright: reportOptionalMemberAccess=false
 from transformers import (
     Seq2SeqTrainingArguments, 
     Seq2SeqTrainer,
@@ -66,7 +65,7 @@ def run_finetuning(
         save_strategy="steps",
         save_steps=500,
         load_best_model_at_end=True,
-        report_to="none", # Tắt WandB
+        report_to="none", 
     )
 
     data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
@@ -80,7 +79,7 @@ def run_finetuning(
         data_collator=data_collator,
     )
 
-    # Huấn luyện (Train)
+    # Huấn luyện mô hình
     print("Starting training...")
     trainer.train()
 

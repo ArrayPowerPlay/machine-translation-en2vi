@@ -85,37 +85,41 @@ def perform_translation(text: str, source_lang: str, target_lang: str):
         return None, "[Unsupported Language Pair]"
 
     model, tokenizer = load_model(direction)
-    
     if model is None or tokenizer is None:
         return None, "Model could not be loaded"
-    
+
     LANG_CODE_MAP = {
-        "en": "en_XX", 
+        "en": "en_XX",
         "vi": "vi_VN"
     }
     src_code = LANG_CODE_MAP.get(source_lang)
     tgt_code = LANG_CODE_MAP.get(target_lang)
-    
     if not src_code or not tgt_code:
         return None, "Unsupported language code"
 
-    tokenizer.src_lang = src_code
-    inputs = tokenizer(text, return_tensors="pt", max_length=1024, truncation=True).to(model.device)
-    
-    with torch.no_grad():
-        outputs = model.generate(
-            input_ids=inputs.input_ids,
-            attention_mask=inputs.attention_mask,
-            max_length=1024,
-            decoder_start_token_id=tokenizer.lang_code_to_id[tgt_code],
-            num_beams=1, # Dùng greedy search 
-            early_stopping=False
-        )
-        # Output shape: (batch_size, sequence_length)
-
-    # Chuyển token ids thành từ 
-    translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    translated_text = re.sub(r"^[-.\s]+", "", translated_text).strip()
-    
+    # Dịch từng dòng riêng biệt nếu có xuống dòng
+    lines = text.splitlines()
+    translated_lines = []
+    for line in lines:
+        if line.strip() == "":
+            translated_lines.append("")
+            continue
+        tokenizer.src_lang = src_code
+        inputs = tokenizer(line, return_tensors="pt", max_length=1024, truncation=True).to(model.device)
+        with torch.no_grad():
+            outputs = model.generate(
+                input_ids=inputs.input_ids,
+                attention_mask=inputs.attention_mask,
+                max_length=1024,
+                decoder_start_token_id=tokenizer.lang_code_to_id[tgt_code],
+                num_beams=1,
+                early_stopping=False
+            )
+            # Output shape: (batch_size, sequence length)
+        # Dịch ngược các token thành văn bản
+        translated_line = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        translated_line = re.sub(r"^[-.\s]+", "", translated_line).strip()
+        translated_lines.append(translated_line)
+    translated_text = "\n".join(translated_lines)
     return translated_text, None
  

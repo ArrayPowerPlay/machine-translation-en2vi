@@ -23,13 +23,8 @@ class TranslationHistory(Base):
     target_lang = Column(String(10))
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # Gộp từ SavedTranslation
     is_saved = Column(Boolean, default=False)
-    
-    # Gộp từ TranslationRating (5=like, 1=dislike, None=chưa rate)
     rating = Column(Integer, nullable=True)
-    
-    # Gộp từ TranslationContribution (lưu suggestion mới nhất của user)
     suggestion = Column(Text, nullable=True)
 
 

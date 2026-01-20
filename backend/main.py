@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import List, Optional
 from jose import JWTError, jwt
 
@@ -32,10 +32,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Khởi tạo phương pháp lấy token
+# Khởi tạo phương pháp lấy token từ các request
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# Tạo các hàm dependencies
+# Tạo các dependencies phục vụ cho dependency injection
 def get_current_user(
     token: str = Depends(oauth2_scheme), 
     db: Session = Depends(database.get_db)
@@ -145,22 +145,26 @@ async def translate_text(
         )
         
         if error:
-             raise HTTPException(status_code=500, detail=error)
+            raise HTTPException(status_code=500, detail=error)
 
         # Lưu bản dịch nếu người dùng đăng nhập
         if current_user:
-            # Kiểm tra bản ghi trùng lặp
-            # Lấy bản ghi mới nhất
-            last_item = db.query(db_models.TranslationHistory)\
-                .filter(db_models.TranslationHistory.user_id == current_user.id)\
-                .order_by(db_models.TranslationHistory.created_at.desc())\
-                .first()
+            # Kiểm tra bản ghi trùng lặp trong toàn bộ lịch sử dịch
+            existing_item = db.query(db_models.TranslationHistory).filter(
+                db_models.TranslationHistory.user_id == current_user.id,
+                db_models.TranslationHistory.original_text == request.text,
+                db_models.TranslationHistory.target_lang == request.target_lang
+            ).first()
             
-            should_save = True
-            if last_item and last_item.original_text == request.text and last_item.target_lang == request.target_lang:
-                should_save = False
+            if existing_item:
+                # Cập nhật thời gian để đưa lên đầu lịch sử dịch
+                existing_item.created_at = datetime.now()
+                # Cập nhật bản dịch mới nhất
+                existing_item.translated_text = translated_text
+                db.commit()
+                return {"id": existing_item.id, "original": request.text, "translated": translated_text}
 
-            if should_save:
+            else:
                 history_item = db_models.TranslationHistory(
                     user_id=current_user.id,
                     original_text=request.text,
@@ -170,8 +174,10 @@ async def translate_text(
                 )
                 db.add(history_item)
                 db.commit()
+                db.refresh(history_item)
+                return {"id": history_item.id, "original": request.text, "translated": translated_text}
 
-        return {"original": request.text, "translated": translated_text}
+        return {"id": existing_item.id, "original": request.text, "translated": translated_text}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -228,7 +234,7 @@ async def clear_all_history(
 
 
 # 5. BẢN DỊCH ĐÃ LƯU
-@app.get("/saved-translations", response_model=List[schemas.HistoryResponse])
+@app.get("/saved", response_model=List[schemas.HistoryResponse])
 async def get_saved_translations(
     search: Optional[str] = None,
     current_user: db_models.User = Depends(get_current_user), 
@@ -247,17 +253,16 @@ async def get_saved_translations(
     return query.order_by(db_models.TranslationHistory.created_at.desc()).all()
 
 
-@app.post("/saved-translations")
+@app.post("/saved/{item_id}")
 async def save_translation(
-    item: schemas.SaveTranslationRequest, 
+    item_id: int, 
     current_user: db_models.User = Depends(get_current_user), 
     db: Session = Depends(database.get_db)
 ):
-    """Lưu một bản dịch (đánh dấu is_saved = True)"""
+    """Lưu một bản dịch theo ID"""
     history_item = db.query(db_models.TranslationHistory).filter(
-        db_models.TranslationHistory.user_id == current_user.id,
-        db_models.TranslationHistory.original_text == item.original_text,
-        db_models.TranslationHistory.translated_text == item.translated_text
+        db_models.TranslationHistory.id == item_id,
+        db_models.TranslationHistory.user_id == current_user.id
     ).first()
     
     if not history_item:
@@ -268,34 +273,13 @@ async def save_translation(
     return {"message": "Translation saved"}
 
 
-@app.post("/saved-translations/unsave")
+@app.delete("/saved/{saved_id}")
 async def unsave_translation(
-    item: schemas.SaveTranslationRequest, 
-    current_user: db_models.User = Depends(get_current_user), 
-    db: Session = Depends(database.get_db)
-):
-    """Hủy lưu một bản dịch (đánh dấu is_saved = False)"""
-    history_item = db.query(db_models.TranslationHistory).filter(
-        db_models.TranslationHistory.user_id == current_user.id,
-        db_models.TranslationHistory.original_text == item.original_text,
-        db_models.TranslationHistory.translated_text == item.translated_text
-    ).first()
-    
-    if not history_item:
-        raise HTTPException(status_code=404, detail="Translation not found")
-    
-    history_item.is_saved = False
-    db.commit()
-    return {"message": "Translation unsaved"}
-
-
-@app.delete("/saved-translations/{saved_id}")
-async def delete_saved_translation(
     saved_id: int, 
     current_user: db_models.User = Depends(get_current_user), 
     db: Session = Depends(database.get_db)
 ):
-    """Bỏ lưu một bản dịch theo ID (đánh dấu is_saved = False)"""
+    """Bỏ lưu một bản dịch theo ID"""
     item = db.query(db_models.TranslationHistory).filter(
         db_models.TranslationHistory.id == saved_id, 
         db_models.TranslationHistory.user_id == current_user.id
@@ -308,7 +292,7 @@ async def delete_saved_translation(
     return {"message": "Removed from saved"}
 
 
-@app.delete("/saved-translations")
+@app.delete("/saved")
 async def clear_all_saved_translations(
     current_user: db_models.User = Depends(get_current_user), 
     db: Session = Depends(database.get_db)
@@ -323,38 +307,37 @@ async def clear_all_saved_translations(
 
 
 # 6. ĐÁNH GIÁ BẢN DỊCH
-@app.post("/rate")
+@app.post("/rate/{item_id}")
 async def rate_translation(
-    item: schemas.RatingRequest, 
+    item_id: int,
+    rating: int = Query(..., ge=0, le=1, description="0: dislike, 1: like"),
     current_user: db_models.User = Depends(get_current_user), 
     db: Session = Depends(database.get_db)
 ):
-    """Đánh giá bản dịch (like=5, dislike=1). Ghi đè nếu đã rate trước đó."""
+    """Đánh giá bản dịch theo ID. Ghi đè nếu đã rate trước đó."""
     history_item = db.query(db_models.TranslationHistory).filter(
-        db_models.TranslationHistory.user_id == current_user.id,
-        db_models.TranslationHistory.original_text == item.original_text,
-        db_models.TranslationHistory.translated_text == item.translated_text
+        db_models.TranslationHistory.id == item_id,
+        db_models.TranslationHistory.user_id == current_user.id
     ).first()
     
     if not history_item:
         raise HTTPException(status_code=404, detail="Translation not found in history")
     
-    history_item.rating = item.rating
+    history_item.rating = rating
     db.commit()
     return {"message": "Thank you for your feedback!"}
 
 
-@app.post("/rate/undo")
+@app.delete("/rate/{item_id}")
 async def undo_rating(
-    item: schemas.RatingRequest,
+    item_id: int,
     current_user: db_models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
 ):
-    """Hủy đánh giá bản dịch (đặt rating = None)"""
+    """Hủy đánh giá bản dịch theo ID"""
     history_item = db.query(db_models.TranslationHistory).filter(
-        db_models.TranslationHistory.user_id == current_user.id,
-        db_models.TranslationHistory.original_text == item.original_text,
-        db_models.TranslationHistory.translated_text == item.translated_text
+        db_models.TranslationHistory.id == item_id,
+        db_models.TranslationHistory.user_id == current_user.id
     ).first()
     
     if not history_item:
@@ -366,28 +349,23 @@ async def undo_rating(
 
 
 # 7. ĐÓNG GÓP BẢN DỊCH
-@app.post("/contribute")
+@app.post("/contribute/{item_id}")
 async def contribute_translation(
+    item_id: int,
     item: schemas.ContributionRequest, 
     current_user: db_models.User = Depends(get_current_user), 
     db: Session = Depends(database.get_db)
 ):
-    """Đóng góp bản dịch tốt hơn. Ghi đè nếu đã đóng góp trước đó."""
-    # Tìm history item mới nhất có cùng original_text
+    """Đóng góp bản dịch tốt hơn theo ID. Ghi đè nếu đã đóng góp trước đó."""
     history_item = db.query(db_models.TranslationHistory).filter(
-        db_models.TranslationHistory.user_id == current_user.id,
-        db_models.TranslationHistory.original_text == item.original_text
-    ).order_by(db_models.TranslationHistory.created_at.desc()).first()
+        db_models.TranslationHistory.id == item_id,
+        db_models.TranslationHistory.user_id == current_user.id
+    ).first()
     
     if not history_item:
         raise HTTPException(status_code=404, detail="Translation not found in history")
     
     # Ghi đè suggestion
-    history_item.suggestion = item.suggested_translation
+    history_item.suggestion = item.suggestion
     db.commit()
     return {"message": "Contribution received. Thank you!"}
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)

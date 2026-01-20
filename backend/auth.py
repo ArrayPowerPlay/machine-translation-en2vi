@@ -2,8 +2,12 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from dotenv import load_dotenv
+import os
 
-SECRET_KEY = "c038fmrv02xw02302ejdioc" # Thay bằng chuỗi ngẫu nhiên
+
+load_dotenv()
+SECRET_KEY = os.getenv("SECRET_KEY")
 # Thuật toán sinh token
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30

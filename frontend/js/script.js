@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- TRẠNG THÁI ---
     let token = localStorage.getItem('accessToken');
+    let currentTranslationId = localStorage.getItem('currentTranslationId');  // Lưu ID bản dịch hiện tại
 
     checkAuth();
 
@@ -200,6 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     const data = await response.json();
                     outputText.value = data.translated;
+                    if (data.id) {
+                        currentTranslationId = data.id;
+                        localStorage.setItem('currentTranslationId', data.id);  // Lưu vào localStorage
+                    }
                     if (headers['Authorization']) loadHistory();
                 }
             } catch (e) {
@@ -215,24 +220,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveBtn) {
         saveBtn.addEventListener('click', async () => {
             if (!token) return alert("Please login to save.");
-            const oText = inputText.value;
-            const tText = outputText.value;
-            if (!oText || !tText) return;
+            if (!currentTranslationId) return alert("Please translate something first.");
 
             const isSaved = saveBtn.querySelector('i').classList.contains('fa-solid');
 
             try {
-                const endpoint = isSaved ? '/saved-translations/unsave' : '/saved-translations';
-                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        original_text: oText,
-                        translated_text: tText,
-                        source_lang: sourceLang.value,
-                        target_lang: targetLang.value
-                    })
-                });
+                let response;
+                if (isSaved) {
+                    // Bỏ lưu
+                    response = await fetch(`${API_BASE_URL}/saved/${currentTranslationId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                } else {
+                    // Lưu mới
+                    response = await fetch(`${API_BASE_URL}/saved/${currentTranslationId}`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
                 if (!response.ok) {
                     const err = await response.json();
                     alert("Error: " + formatError(err.detail));
@@ -249,19 +255,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LOGIC ĐÁNH GIÁ ---
     async function handleRating(score, btn) {
         if (!token) return alert("Please login to rate.");
-        const oText = inputText.value;
-        const tText = outputText.value;
-        if (!oText || !tText) return;
+        if (!currentTranslationId) return alert("Please translate something first.");
 
         const isActive = btn.querySelector('i').classList.contains('fa-solid');
 
         try {
-            const url = isActive ? `${API_BASE_URL}/rate/undo` : `${API_BASE_URL}/rate`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ original_text: oText, translated_text: tText, rating: score })
-            });
+            let response;
+            if (isActive) {
+                // Hủy đánh giá
+                response = await fetch(`${API_BASE_URL}/rate/${currentTranslationId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } else {
+                // Đánh giá mới
+                response = await fetch(`${API_BASE_URL}/rate/${currentTranslationId}?rating=${score}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            }
 
             if (!response.ok) {
                 const err = await response.json();
@@ -272,11 +284,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (isActive) {
-                btn.querySelector('i').className = score === 5 ? 'fa-regular fa-thumbs-up' : 'fa-regular fa-thumbs-down';
+                btn.querySelector('i').className = score === 1 ? 'fa-regular fa-thumbs-up' : 'fa-regular fa-thumbs-down';
             } else {
                 likeBtn.querySelector('i').className = 'fa-regular fa-thumbs-up';
                 dislikeBtn.querySelector('i').className = 'fa-regular fa-thumbs-down';
-                btn.querySelector('i').className = score === 5 ? 'fa-solid fa-thumbs-up' : 'fa-solid fa-thumbs-down';
+                btn.querySelector('i').className = score === 1 ? 'fa-solid fa-thumbs-up' : 'fa-solid fa-thumbs-down';
             }
 
             if (data.message) alert(data.message);
@@ -285,29 +297,23 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { alert("Error sending feedback: " + e.message); }
     }
 
-    if (likeBtn) likeBtn.addEventListener('click', () => handleRating(5, likeBtn));
-    if (dislikeBtn) dislikeBtn.addEventListener('click', () => handleRating(1, dislikeBtn));
+    if (likeBtn) likeBtn.addEventListener('click', () => handleRating(1, likeBtn));
+    if (dislikeBtn) dislikeBtn.addEventListener('click', () => handleRating(0, dislikeBtn));
 
     // --- LOGIC GỢI Ý ---
     if (suggestBtn) {
         suggestBtn.addEventListener('click', async () => {
             if (!token) return alert("Please login to suggest.");
-            const oText = inputText.value;
-            if (!oText) return;
+            if (!currentTranslationId) return alert("Please translate something first.");
 
             const suggestion = prompt("Enter a better translation:");
             if (!suggestion) return;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/contribute`, {
+                const response = await fetch(`${API_BASE_URL}/contribute/${currentTranslationId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({
-                        original_text: oText,
-                        suggested_translation: suggestion,
-                        source_lang: sourceLang.value,
-                        target_lang: targetLang.value
-                    })
+                    body: JSON.stringify({ suggestion: suggestion })
                 });
                 if (!response.ok) {
                     const err = await response.json();
@@ -360,7 +366,16 @@ document.addEventListener('DOMContentLoaded', () => {
         history.forEach(item => {
             const el = document.createElement('div');
             el.className = 'history-item';
-            el.onclick = () => fillTranslation(item.original_text, item.translated_text, item.is_saved, item.rating, !!item.suggestion);
+            el.onclick = () => fillTranslation(
+                item.original_text,
+                item.translated_text,
+                item.is_saved,
+                item.rating,
+                !!item.suggestion,
+                item.source_lang,
+                item.target_lang,
+                item.id
+            );
             el.style.cursor = 'pointer';
             el.innerHTML = `
                 <div class="history-content">
@@ -372,13 +387,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    window.fillTranslation = (src, tgt, isSaved, rating, hasSuggestion) => {
+    window.fillTranslation = (src, tgt, isSaved, rating, hasSuggestion, sourceLangValue, targetLangValue, id) => {
         if (inputText) inputText.value = src;
         if (outputText) outputText.value = tgt;
+            // set current translation id so save/rate/contribute target the selected item
+            if (typeof id !== 'undefined' && id !== null) {
+                currentTranslationId = id;
+                try { localStorage.setItem('currentTranslationId', id); } catch(e) {}
+            }
         if (saveBtn) saveBtn.querySelector('i').className = isSaved ? 'fa-solid fa-bookmark' : 'fa-regular fa-bookmark';
-        if (likeBtn) likeBtn.querySelector('i').className = (rating === 5) ? 'fa-solid fa-thumbs-up' : 'fa-regular fa-thumbs-up';
-        if (dislikeBtn) dislikeBtn.querySelector('i').className = (rating === 1) ? 'fa-solid fa-thumbs-down' : 'fa-regular fa-thumbs-down';
+        if (likeBtn) likeBtn.querySelector('i').className = (rating === 1) ? 'fa-solid fa-thumbs-up' : 'fa-regular fa-thumbs-up';
+        if (dislikeBtn) dislikeBtn.querySelector('i').className = (rating === 0) ? 'fa-solid fa-thumbs-down' : 'fa-regular fa-thumbs-down';
         if (suggestBtn) suggestBtn.querySelector('i').className = hasSuggestion ? 'fa-solid fa-check' : 'fa-solid fa-pen-to-square';
+        if (sourceLang && sourceLangValue) sourceLang.value = sourceLangValue;
+        if (targetLang && targetLangValue) targetLang.value = targetLangValue;
     };
 
     window.deleteHistoryItem = async (id) => {
@@ -403,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteSavedItem = async (id) => {
         if (!confirm("Delete this item?")) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/saved-translations/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/saved/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -461,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clearSavedBtn.addEventListener('click', async () => {
                 if (!confirm("Are you sure you want to delete ALL saved translations?")) return;
                 try {
-                    const res = await fetch(`${API_BASE_URL}/saved-translations`, {
+                    const res = await fetch(`${API_BASE_URL}/saved`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -521,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const [histRes, savedRes] = await Promise.all([
                 fetch(histUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_BASE_URL}/saved-translations`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`${API_BASE_URL}/saved`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
             if (histRes.ok) {
@@ -537,8 +559,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCardHTML(item, isSaved, deleteFunctionStr) {
         let metaIcons = '';
-        if (item.rating === 5) metaIcons += '<i class="fa-solid fa-thumbs-up" title="Liked"></i>';
-        if (item.rating === 1) metaIcons += '<i class="fa-solid fa-thumbs-down" title="Disliked"></i>';
+        if (item.rating === 1) metaIcons += '<i class="fa-solid fa-thumbs-up" title="Liked"></i>';
+        if (item.rating === 0) metaIcons += '<i class="fa-solid fa-thumbs-down" title="Disliked"></i>';
         if (item.suggestion) metaIcons += '<i class="fa-solid fa-pen-to-square" title="Edited"></i>';
         if (isSaved) metaIcons += '<i class="fa-solid fa-bookmark" title="Saved"></i>';
 
@@ -599,7 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         try {
-            let url = `${API_BASE_URL}/saved-translations`;
+            let url = `${API_BASE_URL}/saved`;
             if (searchTerm) url += `?search=${encodeURIComponent(searchTerm)}`;
             
             const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });

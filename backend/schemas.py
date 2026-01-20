@@ -40,21 +40,5 @@ class HistoryResponse(BaseModel):
         from_attributes = True
 
 
-class SaveTranslationRequest(BaseModel):
-    original_text: str
-    translated_text: str
-    source_lang: str
-    target_lang: str
-
-
 class ContributionRequest(BaseModel):
-    original_text: str
-    suggested_translation: str
-    source_lang: str
-    target_lang: str
-
-
-class RatingRequest(BaseModel):
-    original_text: str
-    translated_text: str
-    rating: int = Field(..., ge=1, le=5)
+    suggestion: str
