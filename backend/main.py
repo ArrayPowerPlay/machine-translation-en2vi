@@ -176,8 +176,8 @@ async def translate_text(
                 db.commit()
                 db.refresh(history_item)
                 return {"id": history_item.id, "original": request.text, "translated": translated_text}
-
-        return {"id": existing_item.id, "original": request.text, "translated": translated_text}
+        # Không trả về id bản dịch khi người dùng đăng nhập với tư cách khách
+        return {"original": request.text, "translated": translated_text}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
